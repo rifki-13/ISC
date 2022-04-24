@@ -15,10 +15,13 @@ const channelSchema = new Schema({
         type: String,
         required: false
     },
-    member: {
-        type: Object,
-        required: false
-    }
+    member: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: false
+        }
+    ]
 }, {timestamps: true});
 
 module.exports = mongoose.model('Channel', channelSchema);

@@ -41,6 +41,7 @@ const contentSchema = new Schema({
 const commentSchema = new Schema({
     author: {
         type: Schema.Types.ObjectId,
+        ref: 'User',
         required: true,
     },
     content: {
@@ -77,6 +78,7 @@ const postSchema = new Schema({
     channel: [
         {
             type: Schema.Types.ObjectId,
+            ref: 'Channel',
             required: true,
         }
     ],

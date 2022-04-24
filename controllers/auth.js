@@ -6,15 +6,18 @@ const User = require('../models/user');
 
 exports.signup = (req, res, next) => {
     const errors = validationResult(req);
+    //validation error handling
     if(!errors.isEmpty()){
         const error = new Error('Validation failed');
         error.statusCode = 422;
         error.data = errors.array();
         throw error;
     }
+    //extracting request
     const username = req.body.username;
     const password = req.body.password;
     const name = req.body.name;
+    //hashing password
     bcrypt.hash(password, 10)
         .then(hashedPw => {
             const user = new User({
@@ -41,6 +44,7 @@ exports.login = (req, res, next) => {
     let loadedUser;
     User.findOne({username: username})
         .then(user => {
+            //account not found error
             if(!user) {
                 const error = new Error('This username is not registered');
                 error.statusCode = 401;
@@ -55,6 +59,7 @@ exports.login = (req, res, next) => {
                 error.statusCode = 401;
                 throw error;
             }
+            //creating jwt token
             const token = jwt.sign({
                 username: loadedUser.username,
                 userId: loadedUser._id.toString()},

@@ -26,8 +26,16 @@ const userSchema = new Schema({
             required: false
         }
     ],
+    posts: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Post",
+            required: false
+        }
+    ],
     managed_channel: {
-        type: Object,
+        type: Schema.Types.ObjectId,
+        ref: "Channel",
         required: false
     },
     token: {

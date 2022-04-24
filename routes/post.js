@@ -13,6 +13,15 @@ const router = express.Router();
 router.get('/', isAuth, postController.getPosts);
 
 //route create post || POST /post/
-router.post('/', isAuth);
+router.post('/', isAuth, postController.addPost);
+
+//route get 1 post || GET /post/:postId
+router.get('/:postId', isAuth, postController.getPost);
+
+//route update post || PUT /post/:postId
+router.put('/:postId', isAuth, postController.updatePost);
+
+//route delete post || DELETE /post/:postId
+router.delete('/:postId', isAuth, postController.deletePost);
 
 module.exports = router;
