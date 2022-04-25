@@ -76,7 +76,7 @@ exports.getPost = (req, res, next) => {
     Post.findById(postId)
         .then(post => {
             if(!post){
-                const error = new Error('Channel not found');
+                const error = new Error('Post not found');
                 error.statusCode = 404;
                 throw error;
             }
@@ -111,7 +111,7 @@ exports.updatePost = (req, res, next) => {
         .then(post => {
             //not found error
             if(!post){
-                const error = new Error('Channel not found');
+                const error = new Error('Post not found');
                 error.statusCode = 404;
                 throw error;
             }
@@ -173,4 +173,64 @@ exports.deletePost = (req, res, next) => {
             }
             next(err);
         })
+}
+
+exports.getPostsByChannel = (req, res, next) => {
+    const channelId = req.params.channelId;
+    Post.find({channel: channelId})
+        .then(post => {
+            if(!post){
+                const error = new Error('Post not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            res.status(200).json({message: 'Post Found', post:post});
+        })
+        .catch(err => {
+            if(!err.statusCode){
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+}
+
+exports.postComment = (req, res, next) => {
+    const postId = req.params.postId;
+    //error validation handling
+    const errors = validationResult(req);
+    if(!errors.isEmpty()){
+        const error = new Error('Validation Failed');
+        error.statusCode = 422;
+        throw error;
+    }
+    //extracting request
+    const userId = req.userId;
+    const content = req.body.content;
+    const date = new Date();
+    Post.findById(postId)
+        .then(post => {
+            if(!post){
+                const error = new Error('Post not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            post.comment.push({
+                author: userId,
+                content: content,
+                date: date
+            })
+            return post.save();
+        })
+        .then(post => {
+            res.status(200).json({
+                message: 'Comment added',
+                post: post
+            });
+        })
+        .catch(err => {
+            if(!err.statusCode){
+                err.statusCode = 500;
+            }
+            next(err);
+        });
 }

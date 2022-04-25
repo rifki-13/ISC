@@ -109,10 +109,12 @@ const postSchema = new Schema({
         type: contentSchema,
         required: true
     },
-    comment: {
-        type: commentSchema,
-        required: false
-    }
+    comment: [
+        {
+            type: commentSchema,
+            required: false
+        }
+    ]
 }, {timestamps: true});
 
 module.exports = mongoose.model('Post', postSchema);

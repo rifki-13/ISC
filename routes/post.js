@@ -24,4 +24,12 @@ router.put('/:postId', isAuth, postController.updatePost);
 //route delete post || DELETE /post/:postId
 router.delete('/:postId', isAuth, postController.deletePost);
 
+//route get post based on channel id || POST /post/channel/:channelId
+router.get('/channel/:channelId', isAuth, postController.getPostsByChannel);
+
+//route post comment || POST /post/:postId/comment
+router.post('/:postId/comment', isAuth, [
+    body('content').isLength({max:50, min:1})
+], postController.postComment);
+
 module.exports = router;
