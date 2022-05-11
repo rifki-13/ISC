@@ -2,6 +2,30 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const aws = require('aws-sdk');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+
+//s3 account
+const s3 = new aws.S3({
+    accessKeyId: 'AKIAWDXZGMLGMFFP2SPU',
+    secretAccessKey: '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',
+})
+
+//multer upload
+var upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: 'ta-isc',
+        acl: "public-read",
+        metadata: function (req, file, cb) {
+            cb(null, {fieldName: file.fieldname});
+        },
+        key: function (req, file, cb) {
+            cb(null, Date.now().toString() + '-' + file.originalname);
+        }
+    })
+})
 
 //import route
 const userRoutes = require('./routes/user');
@@ -12,6 +36,10 @@ const postRoutes = require('./routes/post');
 const app = express();
 
 app.use(bodyParser.json()); // application/json
+
+//use multer
+app.use(upload.single('photo'));
+// app.use(upload.array('', 4));
 
 //CORS and header policy
 app.use((req, res, next) => {

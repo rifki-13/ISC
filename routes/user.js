@@ -22,4 +22,10 @@ router.post('/assign', isAuth, [
     body('entry_code').trim().isLength({max:6, min:6})
 ], userController.assignChannel);
 
+//POST /user/changePhoto
+router.post('/changePhoto', isAuth, userController.changePhoto);
+
+//DELETE /user/:userId
+router.delete('/:userId', userController.deleteUser);
+
 module.exports = router;

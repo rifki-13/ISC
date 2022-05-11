@@ -105,3 +105,55 @@ exports.assignChannel = (req, res, next) => {
             next(err);
         });
 }
+
+exports.changePhoto = (req, res, next) => {
+    const userId = req.userId;
+    User.findById(userId)
+        .then(user => {
+            user.photo = req.file.location
+            return user.save();
+        })
+        .then(user => {
+            res.status(201).json({
+                message: "Photo added",
+                user: user
+            })
+        })
+        .catch(err => {
+            if(!err.statusCode){
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+}
+
+exports.deleteUser = (req, res, next) => {
+    const userId = req.params.userId;
+    User.findById(userId)
+        .then(user => {
+            if(!user){
+                const error = new Error('User not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            return User.findByIdAndRemove(userId);
+        })
+        .then(() => {
+            return Channel.find({member: userId});
+        })
+        .then(channels => {
+            return channels.forEach(channel => {
+                channel.member.pull(userId);
+                channel.save();
+            })
+        })
+        .then(() => {
+            res.status(200).json({message: "User deleted"});
+        })
+        .catch(err => {
+            if(!err.statusCode){
+                err.statusCode = 500;
+            }
+            next(err);
+        })
+}

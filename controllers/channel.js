@@ -35,6 +35,9 @@ exports.addChannel = (req, res, next) => {
         desc: desc,
         entry_code: entry_code
     });
+    if(req.body.kodeProdi){
+        channel.kodeProdi = req.body.kodeProdi;
+    }
     //save model ke database
     channel
         .save()

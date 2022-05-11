@@ -21,6 +21,12 @@ const channelSchema = new Schema({
             ref: 'User',
             required: false
         }
+    ],
+    kodeProdi: [
+        {
+            type: String,
+            required: false
+        }
     ]
 }, {timestamps: true});
 
