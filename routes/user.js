@@ -18,12 +18,16 @@ router.post('/', [
 ],userController.addUser); //create user
 
 //POST /user/assign
-router.post('/assign', isAuth, [
-    body('entry_code').trim().isLength({max:6, min:6})
-], userController.assignChannel);
+router.post('/channel/:entryCode', isAuth, userController.enterChannel);
 
-//POST /user/changePhoto
-router.post('/changePhoto', isAuth, userController.changePhoto);
+//POST /users/channel/:channelId/quit
+router.post('/channel/:channelId/quit', isAuth, userController.quitChannel)
+
+//POST /user/change-photo
+router.post('/change-photo', isAuth, userController.changePhoto);
+
+//POST /user/photo/remove
+router.post('/photo/remove', isAuth, userController.removePhoto);
 
 //DELETE /user/:userId
 router.delete('/:userId', userController.deleteUser);

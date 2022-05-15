@@ -50,10 +50,10 @@ app.use((req, res, next) => {
 });
 
 //register route ke app
-app.use('/user', userRoutes);
-app.use('/channel', channelRoutes);
+app.use('/users', userRoutes);
+app.use('/channels', channelRoutes);
 app.use('/auth', authRoutes);
-app.use('/post', postRoutes);
+app.use('/posts', postRoutes);
 
 //error middleware catch error dan mengirimkan respon message error
 app.use((error, req, res, next) => {
@@ -64,7 +64,12 @@ app.use((error, req, res, next) => {
 })
 
 //koneksi mongoose
-mongoose.connect('mongodb+srv://rifki1371:T5ARXNLZKB5REUNn@ta.3poqp.mongodb.net/TA?retryWrites=true&w=majority')
+// mongoose.connect('mongodb+srv://rifki1371:T5ARXNLZKB5REUNn@ta.3poqp.mongodb.net/TA?retryWrites=true&w=majority')
+//     .then(result => {
+//         app.listen(8080);
+//     })
+//     .catch(err => console.log(err));
+mongoose.connect('mongodb://rifki1371:T5ARXNLZKB5REUNn@ta-shard-00-00.3poqp.mongodb.net:27017,ta-shard-00-01.3poqp.mongodb.net:27017,ta-shard-00-02.3poqp.mongodb.net:27017/TA?ssl=true&replicaSet=atlas-brymmm-shard-0&authSource=admin&retryWrites=true&w=majority')
     .then(result => {
         app.listen(8080);
     })

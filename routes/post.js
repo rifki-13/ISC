@@ -24,12 +24,26 @@ router.put('/:postId', isAuth, postController.updatePost);
 //route delete post || DELETE /post/:postId
 router.delete('/:postId', isAuth, postController.deletePost);
 
-//route get post based on channel id || POST /post/channel/:channelId
+//route get post based on channel id || POST /posts/channel/:channelId
 router.get('/channel/:channelId', isAuth, postController.getPostsByChannel);
+
+//route get post based on userid || GET /posts/user
+router.get('/user/own-post', isAuth, postController.getPostByUser);
 
 //route post comment || POST /post/:postId/comment
 router.post('/:postId/comment', isAuth, [
     body('content').isLength({max:50, min:1})
 ], postController.postComment);
+
+//route edit comment || PUT /posts/:postId/comment/:commentId
+router.put('/:postId/comment/:commentId', isAuth, [
+    body('comment').isLength({max:50, min:1})
+], postController.editComment);
+
+//route delete comment || DELETE /posts/:postId/comment/:commentId
+router.delete('/:postId/comment/:commentId', isAuth, postController.deleteComment);
+
+//route save post ke user || POST /posts/:postId/save
+router.post('/:postId/save', isAuth, postController.savePost);
 
 module.exports = router;

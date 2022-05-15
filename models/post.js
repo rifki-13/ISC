@@ -48,13 +48,8 @@ const commentSchema = new Schema({
         type: String,
         required: true,
         max: [50, 'Comment exceeded maximum length']
-    },
-    date: {
-        type: Date,
-        required: true,
-        default: new Date()
     }
-})
+}, {timestamps: true});
 
 //skema post
 const postSchema = new Schema({
@@ -109,7 +104,7 @@ const postSchema = new Schema({
         type: contentSchema,
         required: true
     },
-    comment: [
+    comments: [
         {
             type: commentSchema,
             required: false

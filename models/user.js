@@ -13,7 +13,8 @@ const userSchema = new Schema({
     },
     photo: {
         type: String,
-        required: false
+        required: false,
+        default: null
     },
     name: {
         type: String,
@@ -41,7 +42,14 @@ const userSchema = new Schema({
     token: {
         type: String,
         required: false
-    }
+    },
+    saved_post: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Post",
+            required: false
+        }
+    ]
 }, {
     timestamps: true
 })

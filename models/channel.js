@@ -22,6 +22,13 @@ const channelSchema = new Schema({
             required: false
         }
     ],
+    admin: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: false
+        }
+    ],
     kodeProdi: [
         {
             type: String,

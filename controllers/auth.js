@@ -29,6 +29,7 @@ exports.signup = (req, res, next) => {
             return user.save();
         })
         .then(user => {
+            //assign user ke channel prodi dan jurusan
             if(user.username.length === 10){
                 //extract kode prodi
                 let kodeProdi = user.username.slice(2,6);
