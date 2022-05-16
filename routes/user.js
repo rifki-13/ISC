@@ -4,6 +4,7 @@ const { body } = require('express-validator');
 const userController = require('../controllers/user');
 
 const isAuth = require('../middleware/is-auth');
+const postController = require("../controllers/post");
 
 const router = express.Router();
 
@@ -31,5 +32,11 @@ router.post('/photo/remove', isAuth, userController.removePhoto);
 
 //DELETE /user/:userId
 router.delete('/:userId', userController.deleteUser);
+
+//route save post ke user || POST /users/posts/:postId/save
+router.post('/posts/:postId/save', isAuth, userController.savePost);
+
+//DELETE /users/:postId/remove-save || Menghapus saved post dari user
+router.delete('/posts/:postId/remove-saved', isAuth, userController.removeSavedPost);
 
 module.exports = router;

@@ -40,7 +40,7 @@ exports.addPost = (req, res, next) => {
     //validate if this user belong to channel that post directed to
     User.findById(author)
         .then(user => {
-            if(!user.assignedChannel.includes(channel)){
+            if (!user.assignedChannel.includes(channel)) {
                 const error = new Error('This user does cant create post in this channel');
                 error.statusCode = 403;
                 throw error;
@@ -286,13 +286,13 @@ exports.editComment = (req, res, next) => {
                 error.statusCode = 404;
                 throw error;
             }
-            //validating user
-            if (post.author.toString() !== req.userId) {
+            const comment = post.comments.id(commentId);
+            //validating user's comment
+            if (comment.author.toString() !== req.userId) {
                 const error = new Error('Not Authorized');
                 error.statusCode = 403;
                 throw error;
             }
-            const comment = post.comments.id(commentId);
             comment.content = req.body.comment;
             comment.date = new Date();
             return post.save();
@@ -340,9 +340,19 @@ exports.deleteComment = (req, res, next) => {
         });
 }
 
-//save post
-exports.savePost = (req, res, next) => {
+exports.replyComment = (req, res, next) => {
+    //validation handling
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const error = new Error('Validation Failed');
+        error.statusCode = 422;
+        throw error;
+    }
+    //extract request
     const postId = req.params.postId;
+    const commentId = req.params.commentId;
+    const userId = req.userId;
+    const content = req.body.content;
     Post.findById(postId)
         .then(post => {
             //not found error
@@ -351,20 +361,18 @@ exports.savePost = (req, res, next) => {
                 error.statusCode = 404;
                 throw error;
             }
-            return User.findById(req.userId)
-                .then(user => {
-                    user.saved_post.push(post);
-                    return user.save();
-                })
-                .catch(err => {
-                    if (!err.statusCode) {
-                        err.statusCode = 500;
-                    }
-                    next(err);
-                });
+            const comment = post.comments.id(commentId);
+            comment.replies.push({
+                user_id: userId,
+                content: content
+            });
+            return post.save();
         })
-        .then(result => {
-            res.status(200).json({message: "Post saved", user: result});
+        .then(post => {
+            res.status(200).json({
+                message: 'Comment replied successfully',
+                post: post
+            });
         })
         .catch(err => {
             if (!err.statusCode) {

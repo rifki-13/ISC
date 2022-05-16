@@ -5,6 +5,7 @@ const aws = require('aws-sdk');
 //importing model
 const User = require('../models/user');
 const Channel = require('../models/channel');
+const Post = require('../models/post');
 
 //get all user || GET /user/
 exports.getUsers = (req, res, next) => {
@@ -14,7 +15,7 @@ exports.getUsers = (req, res, next) => {
             res.status(200).json({message: "Users fetched", users: users})
         })
         .catch(err => {
-            if(!err.statusCode){
+            if (!err.statusCode) {
                 err.statusCode = 500;
             }
             next(err);
@@ -25,7 +26,7 @@ exports.getUsers = (req, res, next) => {
 exports.addUser = (req, res, next) => {
     //error handling
     const errors = validationResult(req);
-    if(!errors.isEmpty()){
+    if (!errors.isEmpty()) {
         const error = new Error('Validation Failed');
         error.statusCode = 422;
         throw error;
@@ -47,14 +48,14 @@ exports.addUser = (req, res, next) => {
                     });
                     //save user model to database
                     user.save()
-                        .then(result=> {
+                        .then(result => {
                             res.status(201).json({
                                 message: 'User Created',
                                 user: result
                             })
                         })
                         .catch(err => {
-                            if(!err.statusCode){
+                            if (!err.statusCode) {
                                 err.statusCode = 500;
                             }
                             next(err);
@@ -72,7 +73,7 @@ exports.enterChannel = (req, res, next) => {
     Channel.findOne({entry_code: entry_code})
         .then(channel => {
             //wrong entry code
-            if(!channel){
+            if (!channel) {
                 const error = new Error('Wrong entry code');
                 error.statusCode = 401;
                 throw error;
@@ -81,7 +82,7 @@ exports.enterChannel = (req, res, next) => {
             return User.findById(userId);
         })
         .then(user => {
-            if(user.assignedChannel.includes(channelEntered._id)){
+            if (user.assignedChannel.includes(channelEntered._id)) {
                 const error = new Error('User has already in this channel');
                 error.statusCode = 400;
                 throw error;
@@ -98,7 +99,7 @@ exports.enterChannel = (req, res, next) => {
             })
         })
         .catch(err => {
-            if(!err.statusCode){
+            if (!err.statusCode) {
                 err.statusCode = 500;
             }
             next(err);
@@ -111,7 +112,7 @@ exports.quitChannel = (req, res, next) => {
     User.findById(userId)
         .then(user => {
             //throw error if user not in this channel
-            if(!user.assignedChannel.includes(channelId)){
+            if (!user.assignedChannel.includes(channelId)) {
                 const error = new Error('This user does not belong in this channel');
                 error.statusCode = 403;
                 throw error;
@@ -133,7 +134,7 @@ exports.quitChannel = (req, res, next) => {
             })
         })
         .catch(err => {
-            if(!err.statusCode){
+            if (!err.statusCode) {
                 err.statusCode = 500;
             }
             next(err);
@@ -155,7 +156,7 @@ exports.changePhoto = (req, res, next) => {
             })
         })
         .catch(err => {
-            if(!err.statusCode){
+            if (!err.statusCode) {
                 err.statusCode = 500;
             }
             next(err);
@@ -168,7 +169,7 @@ exports.removePhoto = (req, res, next) => {
     User.findById(userId)
         .then(user => {
             //error photo is null handler
-            if(user.photo === null){
+            if (user.photo === null) {
                 const error = new Error('Photo is not exist');
                 error.statusCode = 404;
                 throw error;
@@ -196,7 +197,7 @@ exports.removePhoto = (req, res, next) => {
             })
         })
         .catch(err => {
-            if(!err.statusCode){
+            if (!err.statusCode) {
                 err.statusCode = 500;
             }
             next(err);
@@ -207,7 +208,7 @@ exports.deleteUser = (req, res, next) => {
     const userId = req.params.userId;
     User.findById(userId)
         .then(user => {
-            if(!user){
+            if (!user) {
                 const error = new Error('User not found');
                 error.statusCode = 404;
                 throw error;
@@ -227,7 +228,71 @@ exports.deleteUser = (req, res, next) => {
             res.status(200).json({message: "User deleted"});
         })
         .catch(err => {
-            if(!err.statusCode){
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        })
+}
+
+//save post
+exports.savePost = (req, res, next) => {
+    const postId = req.params.postId;
+    Post.findById(postId)
+        .then(post => {
+            //not found error
+            if (!post) {
+                const error = new Error('Post not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            return User.findById(req.userId)
+                .then(user => {
+                    user.saved_post.push(post);
+                    return user.save();
+                })
+                .catch(err => {
+                    if (!err.statusCode) {
+                        err.statusCode = 500;
+                    }
+                    next(err);
+                });
+        })
+        .then(result => {
+            res.status(200).json({message: "Post saved", user: result});
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+}
+
+exports.removeSavedPost = (req, res, next) => {
+    const postId = req.params.postId;
+    const userId = req.userId;
+    Post.findById(postId)
+        .then(post => {
+            if (!post) {
+                const error = new Error('Post not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            return post;
+        })
+        .then(post => {
+            return User.findById(userId)
+                .then(user => {
+                    user.saved_post.pull(post._id);
+                    return user.save();
+                })
+        })
+        .then(user => {
+            res.status(200).json({message: "Saved post deleted", user: user});
+        })
+        .catch(err => {
+            if (!err.statusCode) {
                 err.statusCode = 500;
             }
             next(err);

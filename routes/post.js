@@ -1,5 +1,5 @@
 const express = require('express');
-const { body } = require('express-validator');
+const {body} = require('express-validator');
 
 //import post controller
 const postController = require('../controllers/post');
@@ -32,18 +32,20 @@ router.get('/user/own-post', isAuth, postController.getPostByUser);
 
 //route post comment || POST /post/:postId/comment
 router.post('/:postId/comment', isAuth, [
-    body('content').isLength({max:50, min:1})
+    body('content').isLength({max: 50, min: 1})
 ], postController.postComment);
 
 //route edit comment || PUT /posts/:postId/comment/:commentId
 router.put('/:postId/comment/:commentId', isAuth, [
-    body('comment').isLength({max:50, min:1})
+    body('comment').isLength({max: 50, min: 1})
 ], postController.editComment);
 
 //route delete comment || DELETE /posts/:postId/comment/:commentId
 router.delete('/:postId/comment/:commentId', isAuth, postController.deleteComment);
 
-//route save post ke user || POST /posts/:postId/save
-router.post('/:postId/save', isAuth, postController.savePost);
+//route reply comments || POST /posts/:postId/comments/:commentId/reply
+router.post('/:postId/comments/:commentId/reply', isAuth, [
+    body('content').isLength({max: 50, min: 1})
+], postController.replyComment);
 
 module.exports = router;

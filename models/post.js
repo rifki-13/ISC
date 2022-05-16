@@ -37,6 +37,20 @@ const contentSchema = new Schema({
     ]
 })
 
+//skema reply
+const replySchema = new Schema({
+    user_id: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    content: {
+        type: String,
+        required: true,
+        max: [50, 'Comment exceeded maximum length']
+    }
+}, {timestamps: true});
+
 //skema comment
 const commentSchema = new Schema({
     author: {
@@ -48,7 +62,13 @@ const commentSchema = new Schema({
         type: String,
         required: true,
         max: [50, 'Comment exceeded maximum length']
-    }
+    },
+    replies: [
+        {
+            type: replySchema,
+            required: false
+        }
+    ]
 }, {timestamps: true});
 
 //skema post
