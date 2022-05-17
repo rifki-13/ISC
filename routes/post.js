@@ -48,4 +48,13 @@ router.post('/:postId/comments/:commentId/reply', isAuth, [
     body('content').isLength({max: 50, min: 1})
 ], postController.replyComment);
 
+//route edit reply || PUT /posts/:postId/comments/:commentId/reply/:replyId/edit
+router.put('/:postId/comments/:commentId/reply/:replyId', isAuth, [
+    body('content').isLength({max: 50, min: 1})
+], postController.editReply);
+
+//route delete reply || DELETE /posts/:postId/comments/:commentId/reply/:replyId/edit
+router.delete('/:postId/comments/:commentId/reply/:replyId', isAuth, postController.deleteReply);
+
+
 module.exports = router;

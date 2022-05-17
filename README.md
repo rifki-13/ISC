@@ -11,4 +11,9 @@ ___
 ___
 1. Menghapus post yang di simpan / save
 2. Memindahkan save post dari post controller ke user controller
-3. Membuat reply comment di post 
+3. Membuat reply comment di post
+
+### 16 Mei 2022
+___
+1. Membuat edit reply
+2. Membuat delete reply

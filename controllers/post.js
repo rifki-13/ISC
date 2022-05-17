@@ -327,7 +327,7 @@ exports.deleteComment = (req, res, next) => {
                 throw error;
             }
             post.comments.id(commentId).remove();
-            return post;
+            return post.save();
         })
         .then(result => {
             res.status(200).json({message: "comment deleted", post: result});
@@ -369,8 +369,85 @@ exports.replyComment = (req, res, next) => {
             return post.save();
         })
         .then(post => {
-            res.status(200).json({
+            res.status(201).json({
                 message: 'Comment replied successfully',
+                post: post
+            });
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+}
+
+exports.editReply = (req, res, next) => {
+    //validation handling
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        const error = new Error('Validation Failed');
+        error.statusCode = 422;
+        throw error;
+    }
+    //extract request
+    const postId = req.params.postId;
+    const commentId = req.params.commentId;
+    const replyId = req.params.replyId;
+    const userId = req.userId;
+    const content = req.body.content;
+    Post.findById(postId)
+        .then(post => {
+            //not found error
+            if (!post) {
+                const error = new Error('Post not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            const comment = post.comments.id(commentId);
+            const reply = comment.replies.id(replyId);
+            if(!reply.user_id === userId){
+                const error = new Error('This user cannot edit others reply');
+                error.statusCode = 403;
+                throw error;
+            }
+            reply.content = content;
+            return post.save();
+        })
+        .then(post => {
+            res.status(200).json({
+                message: 'Reply edited successfully',
+                post: post
+            });
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+}
+
+exports.deleteReply = (req, res, next) => {
+    const postId = req.params.postId;
+    const commentId = req.params.commentId;
+    const replyId = req.params.replyId;
+    const userId = req.userId;
+    Post.findById(postId)
+        .then(post => {
+            //not found error
+            if (!post) {
+                const error = new Error('Post not found');
+                error.statusCode = 404;
+                throw error;
+            }
+            const comment = post.comments.id(commentId);
+            const reply = comment.replies.id(replyId).remove();
+            return post.save();
+        })
+        .then(post => {
+            res.status(200).json({
+                message: 'Reply deleted successfully',
                 post: post
             });
         })
