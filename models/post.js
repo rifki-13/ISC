@@ -17,13 +17,13 @@ const contentSchema = new Schema({
         type: String,
         required: true
     },
-    document: [
+    attachment: [
         {
             type: String,
             required: false
         }
     ],
-    link: [
+    image: [
         {
             type: String,
             required: false

@@ -1,10 +1,34 @@
 const express = require('express');
 const { body } = require('express-validator');
+const aws = require("aws-sdk");
+const config = require("config");
+const multer = require("multer");
+const multerS3 = require("multer-s3");
 
 const userController = require('../controllers/user');
 
 const isAuth = require('../middleware/is-auth');
-const postController = require("../controllers/post");
+
+//s3 account
+const s3 = new aws.S3({
+    accessKeyId: config.get('s3.accessKeyId'),
+    secretAccessKey: config.get('s3.secretAccessKey')
+})
+
+//multer upload user photo
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: config.get('s3.bucket'),
+        acl: "public-read",
+        metadata: function (req, file, cb) {
+            cb(null, {fieldName: file.fieldname});
+        },
+        key: function (req, file, cb) {
+            cb(null, 'user_photos/' + Date.now().toString() + '-' + file.originalname);
+        }
+    })
+})
 
 const router = express.Router();
 
@@ -25,10 +49,10 @@ router.post('/channel/:entryCode', isAuth, userController.enterChannel);
 router.post('/channel/:channelId/quit', isAuth, userController.quitChannel)
 
 //POST /user/change-photo
-router.post('/change-photo', isAuth, userController.changePhoto);
+router.post('/photo', [isAuth, express().use(upload.single('photo'))], userController.changePhoto);
 
 //POST /user/photo/remove
-router.post('/photo/remove', isAuth, userController.removePhoto);
+router.delete('/photo', isAuth, userController.removePhoto);
 
 //DELETE /user/:userId
 router.delete('/:userId', userController.deleteUser);
