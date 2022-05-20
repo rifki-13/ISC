@@ -2,6 +2,8 @@ const { validationResult } = require("express-validator");
 
 const Post = require("../models/post");
 const User = require("../models/user");
+const config = require("config");
+const s3 = require("../helpers/s3");
 
 //get all post || GET /post/
 exports.getPosts = (req, res, next) => {
@@ -33,10 +35,33 @@ exports.addPost = (req, res, next) => {
   const kategori = req.body.kategori;
   let creator;
   let createdPost;
-  if (req.files.image) {
+  let images = [];
+  let videos = [];
+  let attachments = [];
+  if (req.files) {
+    if (req.files.images) {
+      req.files.images.forEach((element) => {
+        images.push(element.location);
+        console.log(element.key);
+      });
+    }
+    if (req.files.videos) {
+      req.files.videos.forEach((element) => {
+        videos.push(element.location);
+      });
+    }
+    if (req.files.attachments) {
+      req.files.attachments.forEach((element) => {
+        attachments.push(element.location);
+        console.log(element.key);
+      });
+    }
   }
   const content = {
     text: req.body.text,
+    images: images,
+    videos: videos,
+    attachments: attachments,
   };
   //validate if this user belong to channel that post directed to
   User.findById(author)
@@ -166,6 +191,36 @@ exports.deletePost = (req, res, next) => {
         error.statusCode = 403;
         throw error;
       }
+      //extract array
+      const images = post.content.images;
+      const videos = post.content.videos;
+      const attachments = post.content.attachments;
+      let keys = [];
+      //delete images
+      if (images.length > 0) {
+        let imageKey = images.map((key) => ({
+          Key: key.slice(key.indexOf("aws.com/") + 8),
+        }));
+        keys.push(...imageKey);
+      }
+      //delete videos
+      if (videos.length > 0) {
+        let videosKey = videos.map((key) => ({
+          Key: key.slice(key.indexOf("aws.com/") + 8),
+        }));
+        keys.push(...videosKey);
+      }
+      //delete attachment
+      if (attachments.length > 0) {
+        let attachmentsKey = attachments.map((key) => ({
+          Key: key.slice(key.indexOf("aws.com/") + 8),
+        }));
+        keys.push(...attachmentsKey);
+      }
+      s3.deleteObjects({
+        Bucket: config.get("s3.bucket"),
+        Delete: { Objects: keys },
+      }).promise();
       return Post.findByIdAndRemove(postId);
     })
     .then(() => {

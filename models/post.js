@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 /**
  *  title
@@ -13,123 +13,132 @@ const Schema = mongoose.Schema;
  */
 //skema content
 const contentSchema = new Schema({
-    text: {
-        type: String,
-        required: true
+  text: {
+    type: String,
+    required: true,
+  },
+  attachments: [
+    {
+      type: String,
+      required: false,
     },
-    attachment: [
-        {
-            type: String,
-            required: false
-        }
-    ],
-    image: [
-        {
-            type: String,
-            required: false
-        }
-    ],
-    video: [
-        {
-            type: String,
-            required: false
-        }
-    ]
-})
+  ],
+  images: [
+    {
+      type: String,
+      required: false,
+    },
+  ],
+  videos: [
+    {
+      type: String,
+      required: false,
+    },
+  ],
+});
 
 //skema reply
-const replySchema = new Schema({
+const replySchema = new Schema(
+  {
     user_id: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     content: {
-        type: String,
-        required: true,
-        max: [50, 'Comment exceeded maximum length']
-    }
-}, {timestamps: true});
+      type: String,
+      required: true,
+      max: [50, "Comment exceeded maximum length"],
+    },
+  },
+  { timestamps: true }
+);
 
 //skema comment
-const commentSchema = new Schema({
+const commentSchema = new Schema(
+  {
     author: {
-        type: Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     content: {
-        type: String,
-        required: true,
-        max: [50, 'Comment exceeded maximum length']
+      type: String,
+      required: true,
+      max: [50, "Comment exceeded maximum length"],
     },
     replies: [
-        {
-            type: replySchema,
-            required: false
-        }
-    ]
-}, {timestamps: true});
+      {
+        type: replySchema,
+        required: false,
+      },
+    ],
+  },
+  { timestamps: true }
+);
 
 //skema post
-const postSchema = new Schema({
+const postSchema = new Schema(
+  {
     title: {
-        type: String,
-        required: true,
+      type: String,
+      required: true,
     },
     author: {
-        type: Schema.Types.ObjectId,
-        required: true,
+      type: Schema.Types.ObjectId,
+      required: true,
     },
     datePosted: {
-        type: Date,
-        required: true,
-        default: new Date()
+      type: Date,
+      required: true,
+      default: new Date(),
     },
     validityDate: {
-        type: Date,
-        required: false,
+      type: Date,
+      required: false,
     },
     channel: [
-        {
-            type: Schema.Types.ObjectId,
-            ref: 'Channel',
-            required: true,
-        }
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Channel",
+        required: true,
+      },
     ],
     urgent: {
-        type: Boolean,
-        required: false,
-        default: false
+      type: Boolean,
+      required: false,
+      default: false,
     },
     readOnly: {
-        type: Boolean,
-        required: false,
-        default: false
+      type: Boolean,
+      required: false,
+      default: false,
     },
     active: {
-        type: Boolean,
-        required: true,
-        default: true
+      type: Boolean,
+      required: true,
+      default: true,
     },
     kategori: {
-        type: String,
-        enum: {
-            values: ['Surat Edaran', 'Event', 'Notice', 'Lost and Found'],
-            message: '{VALUE} is not supported'
-        },
-        required: true,
+      type: String,
+      enum: {
+        values: ["Surat Edaran", "Event", "Notice", "Lost and Found"],
+        message: "{VALUE} is not supported",
+      },
+      required: true,
     },
     content: {
-        type: contentSchema,
-        required: true
+      type: contentSchema,
+      required: true,
     },
     comments: [
-        {
-            type: commentSchema,
-            required: false
-        }
-    ]
-}, {timestamps: true});
+      {
+        type: commentSchema,
+        required: false,
+      },
+    ],
+  },
+  { timestamps: true }
+);
 
-module.exports = mongoose.model('Post', postSchema);
+module.exports = mongoose.model("Post", postSchema);

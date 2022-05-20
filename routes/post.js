@@ -16,7 +16,7 @@ const s3 = new aws.S3({
   secretAccessKey: config.get("s3.secretAccessKey"),
 });
 
-const upload = multer({
+var upload = multer({
   storage: multerS3({
     s3: s3,
     bucket: config.get("s3.bucket"),
@@ -42,17 +42,17 @@ router.get("/", isAuth, postController.getPosts);
 router.post(
   "/",
   [
-    isAuth,
     express().use(
       upload.fields([
         { name: "images", maxCount: 10 },
         {
-          name: "attachment",
+          name: "attachments",
           maxCount: 10,
         },
-        { name: "video", maxCount: 3 },
+        { name: "videos", maxCount: 3 },
       ])
     ),
+    isAuth,
   ],
   postController.addPost
 );
