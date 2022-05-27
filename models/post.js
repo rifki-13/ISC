@@ -86,6 +86,7 @@ const postSchema = new Schema(
     },
     author: {
       type: Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     datePosted: {
@@ -118,6 +119,11 @@ const postSchema = new Schema(
       type: Boolean,
       required: true,
       default: true,
+    },
+    archived: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     kategori: {
       type: String,

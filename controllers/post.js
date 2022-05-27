@@ -2,8 +2,7 @@ const { validationResult } = require("express-validator");
 
 const Post = require("../models/post");
 const User = require("../models/user");
-const config = require("config");
-const s3 = require("../helpers/s3");
+const s3Helpers = require("../helpers/s3");
 
 //get all post || GET /post/
 exports.getPosts = (req, res, next) => {
@@ -42,7 +41,6 @@ exports.addPost = (req, res, next) => {
     if (req.files.images) {
       req.files.images.forEach((element) => {
         images.push(element.location);
-        console.log(element.key);
       });
     }
     if (req.files.videos) {
@@ -53,7 +51,6 @@ exports.addPost = (req, res, next) => {
     if (req.files.attachments) {
       req.files.attachments.forEach((element) => {
         attachments.push(element.location);
-        console.log(element.key);
       });
     }
   }
@@ -136,12 +133,37 @@ exports.updatePost = (req, res, next) => {
     error.statusCode = 422;
     throw error;
   }
-  //model construct
+  //extract body request
   const title = req.body.title;
   const channel = req.body.channelId;
   const kategori = req.body.kategori;
+  //push attachment location ke array
+  let images = [];
+  let videos = [];
+  let attachments = [];
+  if (req.files) {
+    if (req.files.images) {
+      req.files.images.forEach((element) => {
+        images.push(element.location);
+      });
+    }
+    if (req.files.videos) {
+      req.files.videos.forEach((element) => {
+        videos.push(element.location);
+      });
+    }
+    if (req.files.attachments) {
+      req.files.attachments.forEach((element) => {
+        attachments.push(element.location);
+      });
+    }
+  }
+  //object content
   const content = {
     text: req.body.text,
+    images: images,
+    videos: videos,
+    attachments: attachments,
   };
   Post.findById(postId)
     .then((post) => {
@@ -157,6 +179,24 @@ exports.updatePost = (req, res, next) => {
         error.statusCode = 403;
         throw error;
       }
+      //extract array
+      const images = post.content.images;
+      const videos = post.content.videos;
+      const attachments = post.content.attachments;
+      let keys = [];
+      //delete images
+      if (images.length > 0) {
+        keys = s3Helpers.extractKeys(images, keys);
+      }
+      //delete videos
+      if (videos.length > 0) {
+        keys = s3Helpers.extractKeys(videos, keys);
+      }
+      //delete attachment
+      if (attachments.length > 0) {
+        keys = s3Helpers.extractKeys(attachments, keys);
+      }
+      s3Helpers.deleteObjects(keys);
       post.title = title;
       post.channel = channel;
       post.kategori = kategori;
@@ -198,29 +238,17 @@ exports.deletePost = (req, res, next) => {
       let keys = [];
       //delete images
       if (images.length > 0) {
-        let imageKey = images.map((key) => ({
-          Key: key.slice(key.indexOf("aws.com/") + 8),
-        }));
-        keys.push(...imageKey);
+        keys = s3Helpers.extractKeys(images, keys);
       }
       //delete videos
       if (videos.length > 0) {
-        let videosKey = videos.map((key) => ({
-          Key: key.slice(key.indexOf("aws.com/") + 8),
-        }));
-        keys.push(...videosKey);
+        keys = s3Helpers.extractKeys(videos, keys);
       }
       //delete attachment
       if (attachments.length > 0) {
-        let attachmentsKey = attachments.map((key) => ({
-          Key: key.slice(key.indexOf("aws.com/") + 8),
-        }));
-        keys.push(...attachmentsKey);
+        keys = s3Helpers.extractKeys(attachments, keys);
       }
-      s3.deleteObjects({
-        Bucket: config.get("s3.bucket"),
-        Delete: { Objects: keys },
-      }).promise();
+      s3Helpers.deleteObjects(keys);
       return Post.findByIdAndRemove(postId);
     })
     .then(() => {
@@ -251,29 +279,6 @@ exports.getPostsByChannel = (req, res, next) => {
         throw error;
       }
       res.status(200).json({ message: "Post Found", post: post });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
-};
-
-exports.getPostByUser = (req, res, next) => {
-  const userId = req.userId;
-  Post.find({ author: userId })
-    .then((post) => {
-      //not found error
-      if (!post) {
-        const error = new Error("Post not found");
-        error.statusCode = 404;
-        throw error;
-      }
-      return post;
-    })
-    .then((result) => {
-      res.status(200).json({ message: "post by " + userId, post: result });
     })
     .catch((err) => {
       if (!err.statusCode) {
@@ -519,10 +524,4 @@ exports.deleteReply = (req, res, next) => {
       }
       next(err);
     });
-};
-
-exports.tesUpload = (req, res, next) => {
-  res.status(200).json({
-    request: req.files,
-  });
 };

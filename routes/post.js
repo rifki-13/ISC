@@ -6,32 +6,10 @@ const postController = require("../controllers/post");
 
 //import middleware
 const isAuth = require("../middleware/is-auth");
-const multer = require("multer");
-const multerS3 = require("multer-s3");
-const config = require("config");
-const aws = require("aws-sdk");
+const multerHelper = require("../helpers/multer");
 
-const s3 = new aws.S3({
-  accessKeyId: config.get("s3.accessKeyId"),
-  secretAccessKey: config.get("s3.secretAccessKey"),
-});
-
-var upload = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: config.get("s3.bucket"),
-    acl: "public-read",
-    metadata: function (req, file, cb) {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-      cb(
-        null,
-        "attachments/" + Date.now().toString() + "-" + file.originalname
-      );
-    },
-  }),
-});
+//upload multer
+const upload = multerHelper.uploadPostAttachment;
 
 const router = express.Router();
 
@@ -61,16 +39,29 @@ router.post(
 router.get("/:postId", isAuth, postController.getPost);
 
 //route update post || PUT /post/:postId
-router.put("/:postId", isAuth, postController.updatePost);
+router.put(
+  "/:postId",
+  [
+    express().use(
+      upload.fields([
+        { name: "images", maxCount: 10 },
+        {
+          name: "attachments",
+          maxCount: 10,
+        },
+        { name: "videos", maxCount: 3 },
+      ])
+    ),
+    isAuth,
+  ],
+  postController.updatePost
+);
 
 //route delete post || DELETE /post/:postId
 router.delete("/:postId", isAuth, postController.deletePost);
 
 //route get post based on channel id || POST /posts/channel/:channelId
 router.get("/channel/:channelId", isAuth, postController.getPostsByChannel);
-
-//route get post based on userid || GET /posts/user
-router.get("/user/own-post", isAuth, postController.getPostByUser);
 
 //route post comment || POST /post/:postId/comment
 router.post(
@@ -117,7 +108,5 @@ router.delete(
   isAuth,
   postController.deleteReply
 );
-
-router.post("/testUpload", postController.tesUpload);
 
 module.exports = router;

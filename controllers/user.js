@@ -5,7 +5,7 @@ const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const Channel = require("../models/channel");
 const Post = require("../models/post");
-const s3 = require("../helpers/s3");
+const s3Helpers = require("../helpers/s3");
 
 //get all user || GET /user/
 exports.getUsers = (req, res, next) => {
@@ -177,12 +177,7 @@ exports.removePhoto = (req, res, next) => {
     })
     //delete photo in s3 bucket
     .then(() => {
-      return s3
-        .deleteObject({
-          Bucket: "ta-isc",
-          Key: photoKey,
-        })
-        .promise();
+      return s3Helpers.deleteObject(photoKey);
     })
     .then(() => {
       res.status(201).json({
@@ -283,6 +278,112 @@ exports.removeSavedPost = (req, res, next) => {
     })
     .then((user) => {
       res.status(200).json({ message: "Saved post deleted", user: user });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+exports.archivePost = (req, res, next) => {
+  const userId = req.userId;
+  const postId = req.params.postId;
+  Post.findById(postId)
+    .then((post) => {
+      if (post.author.toString() !== userId) {
+        const error = new Error("This post doesnt belong to this user");
+        error.statusCode = 403;
+        throw error;
+      }
+      post.active = false;
+      post.archived = true;
+      return post.save();
+    })
+    .then((post) => {
+      return User.findById(userId)
+        .then((user) => {
+          user.posts.pull(post);
+          user.archived_posts.push(post);
+          return user.save();
+        })
+        .catch((err) => {
+          if (!err.statusCode) {
+            err.statusCode = 500;
+          }
+          next(err);
+        });
+    })
+    .then((user) => {
+      res.status(200).json({ message: "Post archived", user: user });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+exports.unarchivePost = (req, res, next) => {
+  const userId = req.userId;
+  const postId = req.params.postId;
+  Post.findById(postId)
+    .then((post) => {
+      if (post.author.toString() !== userId) {
+        const error = new Error("This post doesnt belong to this user");
+        error.statusCode = 403;
+        throw error;
+      }
+      if (post.archived !== true) {
+        const error = new Error("This post is not archived");
+        error.statusCode = 400;
+        throw error;
+      }
+      post.active = true;
+      post.archived = false;
+      return post.save();
+    })
+    .then((post) => {
+      return User.findById(userId)
+        .then((user) => {
+          user.archived_posts.pull(post);
+          user.posts.push(post);
+          return user.save();
+        })
+        .catch((err) => {
+          if (!err.statusCode) {
+            err.statusCode = 500;
+          }
+          next(err);
+        });
+    })
+    .then((user) => {
+      res.status(200).json({ message: "Post unarchived", user: user });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+exports.getOwnPost = (req, res, next) => {
+  const userId = req.userId;
+  Post.find({ author: userId })
+    .then((post) => {
+      //not found error
+      if (!post) {
+        const error = new Error("Post not found");
+        error.statusCode = 404;
+        throw error;
+      }
+      return post;
+    })
+    .then((result) => {
+      res.status(200).json({ message: "post by " + userId, post: result });
     })
     .catch((err) => {
       if (!err.statusCode) {
