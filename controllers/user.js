@@ -297,8 +297,7 @@ exports.archivePost = (req, res, next) => {
         error.statusCode = 403;
         throw error;
       }
-      post.active = false;
-      post.archived = true;
+      post.status = "archived";
       return post.save();
     })
     .then((post) => {
@@ -336,13 +335,12 @@ exports.unarchivePost = (req, res, next) => {
         error.statusCode = 403;
         throw error;
       }
-      if (post.archived !== true) {
+      if (post.status !== "archived") {
         const error = new Error("This post is not archived");
         error.statusCode = 400;
         throw error;
       }
-      post.active = true;
-      post.archived = false;
+      post.status = "active";
       return post.save();
     })
     .then((post) => {

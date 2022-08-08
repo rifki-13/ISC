@@ -89,11 +89,6 @@ const postSchema = new Schema(
       ref: "User",
       required: true,
     },
-    datePosted: {
-      type: Date,
-      required: true,
-      default: new Date(),
-    },
     validityDate: {
       type: Date,
       required: false,
@@ -115,15 +110,14 @@ const postSchema = new Schema(
       required: false,
       default: false,
     },
-    active: {
-      type: Boolean,
+    status: {
+      type: String,
+      enum: {
+        values: ["active", "archived", "expired", "reported"],
+        message: "{VALUE} is not supported",
+      },
+      default: "active",
       required: true,
-      default: true,
-    },
-    archived: {
-      type: Boolean,
-      required: false,
-      default: false,
     },
     kategori: {
       type: String,

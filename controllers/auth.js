@@ -111,3 +111,5 @@ exports.login = (req, res, next) => {
       next(err);
     });
 };
+
+exports.admin_signup = (req, res, next) => {};

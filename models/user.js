@@ -42,11 +42,6 @@ const userSchema = new Schema(
         required: false,
       },
     ],
-    managed_channel: {
-      type: Schema.Types.ObjectId,
-      ref: "Channel",
-      required: false,
-    },
     saved_post: [
       {
         type: Schema.Types.ObjectId,
@@ -54,6 +49,11 @@ const userSchema = new Schema(
         required: false,
       },
     ],
+    managed_channel: {
+      type: Schema.Types.ObjectId,
+      ref: "Channel",
+      required: false,
+    },
   },
   {
     timestamps: true,
