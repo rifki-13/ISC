@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const config = require("config");
 
 const User = require("../models/user");
-const Channel = require("../models/channel");
+// const Channel = require("../models/channel");
 
 exports.signup = (req, res, next) => {
   const errors = validationResult(req);
@@ -19,6 +19,8 @@ exports.signup = (req, res, next) => {
   const username = req.body.username;
   const password = req.body.password;
   const name = req.body.name;
+  const jurusan = req.body.jurusan;
+  const prodi = req.body.prodi;
   //hashing password
   bcrypt
     .hash(password, 10)
@@ -27,42 +29,45 @@ exports.signup = (req, res, next) => {
         username: username,
         password: hashedPw,
         name: name,
+        jurusan: jurusan,
+        prodi: prodi,
       });
       return user.save();
     })
     .then((user) => {
       //assign user ke channel prodi dan jurusan
-      if (user.username.length === 10) {
-        //extract kode prodi
-        let kodeProdi = user.username.slice(2, 6);
-        Channel.find({ kodeProdi: kodeProdi })
-          .then((channels) => {
-            //auto assign user to channel based on kode prodi
-            channels.forEach((channel) => {
-              user.assignedChannel.push(channel._id);
-              channel.member.push(user._id);
-              channel.save();
-            });
-            return user.save();
-          })
-          .then((result) => {
-            res.status(201).json({
-              message: "User created",
-              userId: result._id,
-              user: result,
-            });
-          })
-          .catch((err) => {
-            if (!err.statusCode) {
-              err.statusCode = 500;
-            }
-            next(err);
-          });
-      } else {
-        res
-          .status(201)
-          .json({ message: "User created", userId: user._id, user: user });
-      }
+      //TODO : auto assign user (dosen / mahasiswa berdasarkan prodi dan jurusan)
+
+      // if (user.username.length === 10) {
+      //   //extract kode prodi
+      //   let kodeProdi = user.username.slice(2, 6);
+      //   Channel.find({ kodeProdi: kodeProdi })
+      //     .then((channels) => {
+      //       //auto assign user to channel based on kode prodi
+      //       channels.forEach((channel) => {
+      //         user.assigned_channel.push(channel._id);
+      //         channel.member.push(user._id);
+      //         channel.save();
+      //       });
+      //       return user.save();
+      //     })
+      //     .then((result) => {
+      //       res.status(201).json({
+      //         message: "User created",
+      //         userId: result._id,
+      //         user: result,
+      //       });
+      //     })
+      //     .catch((err) => {
+      //       if (!err.statusCode) {
+      //         err.statusCode = 500;
+      //       }
+      //       next(err);
+      //     });
+      // } else {
+      res
+        .status(201)
+        .json({ message: "User created", userId: user._id, user: user });
     })
     .catch((err) => {
       if (!err.statusCode) {
@@ -112,4 +117,4 @@ exports.login = (req, res, next) => {
     });
 };
 
-exports.admin_signup = (req, res, next) => {};
+// exports.admin_signup = (req, res, next) => {};

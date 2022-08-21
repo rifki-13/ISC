@@ -35,7 +35,7 @@ exports.addPost = (req, res, next) => {
   let creator;
   let createdPost;
   let images = [];
-  let videos = [];
+  // let videos = [];
   let attachments = [];
   if (req.files) {
     if (req.files.images) {
@@ -43,11 +43,11 @@ exports.addPost = (req, res, next) => {
         images.push(element.location);
       });
     }
-    if (req.files.videos) {
-      req.files.videos.forEach((element) => {
-        videos.push(element.location);
-      });
-    }
+    // if (req.files.videos) {
+    //   req.files.videos.forEach((element) => {
+    //     videos.push(element.location);
+    //   });
+    // }
     if (req.files.attachments) {
       req.files.attachments.forEach((element) => {
         attachments.push(element.location);
@@ -57,13 +57,13 @@ exports.addPost = (req, res, next) => {
   const content = {
     text: req.body.text,
     images: images,
-    videos: videos,
+    // videos: videos,
     attachments: attachments,
   };
   //validate if this user belong to channel that post directed to
   User.findById(author)
     .then((user) => {
-      if (!user.assignedChannel.includes(channel)) {
+      if (!user.assigned_channel.includes(channel)) {
         const error = new Error(
           "This user does cant create post in this channel"
         );
@@ -139,7 +139,7 @@ exports.updatePost = (req, res, next) => {
   const kategori = req.body.kategori;
   //push attachment location ke array
   let images = [];
-  let videos = [];
+  // let videos = [];
   let attachments = [];
   if (req.files) {
     if (req.files.images) {
@@ -147,11 +147,11 @@ exports.updatePost = (req, res, next) => {
         images.push(element.location);
       });
     }
-    if (req.files.videos) {
-      req.files.videos.forEach((element) => {
-        videos.push(element.location);
-      });
-    }
+    // if (req.files.videos) {
+    //   req.files.videos.forEach((element) => {
+    //     videos.push(element.location);
+    //   });
+    // }
     if (req.files.attachments) {
       req.files.attachments.forEach((element) => {
         attachments.push(element.location);
@@ -162,7 +162,7 @@ exports.updatePost = (req, res, next) => {
   const content = {
     text: req.body.text,
     images: images,
-    videos: videos,
+    // videos: videos,
     attachments: attachments,
   };
   Post.findById(postId)
@@ -181,7 +181,7 @@ exports.updatePost = (req, res, next) => {
       }
       //extract array
       const images = post.content.images;
-      const videos = post.content.videos;
+      // const videos = post.content.videos;
       const attachments = post.content.attachments;
       let keys = [];
       //delete images
@@ -189,9 +189,9 @@ exports.updatePost = (req, res, next) => {
         keys = s3Helpers.extractKeys(images, keys);
       }
       //delete videos
-      if (videos.length > 0) {
-        keys = s3Helpers.extractKeys(videos, keys);
-      }
+      // if (videos.length > 0) {
+      //   keys = s3Helpers.extractKeys(videos, keys);
+      // }
       //delete attachment
       if (attachments.length > 0) {
         keys = s3Helpers.extractKeys(attachments, keys);
@@ -233,7 +233,7 @@ exports.deletePost = (req, res, next) => {
       }
       //extract array
       const images = post.content.images;
-      const videos = post.content.videos;
+      // const videos = post.content.videos;
       const attachments = post.content.attachments;
       let keys = [];
       //delete images
@@ -241,9 +241,9 @@ exports.deletePost = (req, res, next) => {
         keys = s3Helpers.extractKeys(images, keys);
       }
       //delete videos
-      if (videos.length > 0) {
-        keys = s3Helpers.extractKeys(videos, keys);
-      }
+      // if (videos.length > 0) {
+      //   keys = s3Helpers.extractKeys(videos, keys);
+      // }
       //delete attachment
       if (attachments.length > 0) {
         keys = s3Helpers.extractKeys(attachments, keys);

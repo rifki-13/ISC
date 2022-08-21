@@ -6,7 +6,7 @@ const s3 = s3Helpers.client;
 
 const imageWL = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
-const videoWL = ["video/x-msvideo", "video/mp4", "video/mpeg", "video/webm"];
+// const videoWL = ["video/x-msvideo", "video/mp4", "video/mpeg", "video/webm"];
 
 exports.uploadPostAttachment = multer({
   storage: multerS3({
@@ -29,11 +29,11 @@ exports.uploadPostAttachment = multer({
         return cb(new Error("image file only"), false);
       }
       cb(null, true);
-    } else if (file.fieldname === "videos") {
-      if (!videoWL.includes(file.mimetype)) {
-        return cb(new Error("video file only"), false);
-      }
-      cb(null, true);
+      // } else if (file.fieldname === "videos") {
+      //   if (!videoWL.includes(file.mimetype)) {
+      //     return cb(new Error("video file only"), false);
+      //   }
+      //   cb(null, true);
     } else {
       cb(null, true);
     }

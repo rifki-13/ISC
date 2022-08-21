@@ -21,7 +21,15 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
-    assignedChannel: [
+    jurusan: {
+      type: String,
+      required: false,
+    },
+    prodi: {
+      type: String,
+      required: false,
+    },
+    assigned_channel: [
       {
         type: Schema.Types.ObjectId,
         ref: "Channel",
@@ -54,6 +62,14 @@ const userSchema = new Schema(
       ref: "Channel",
       required: false,
     },
+    role: [
+      {
+        type: String,
+        enum: {
+          values: ["admin", "mahasiswa", "dosen", "superuser"],
+        },
+      },
+    ],
   },
   {
     timestamps: true,

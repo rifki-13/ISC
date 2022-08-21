@@ -30,7 +30,7 @@ const channelSchema = new Schema(
         required: false,
       },
     ],
-    parentChannel: {
+    parent_channel: {
       type: Schema.Types.ObjectId,
       ref: "Channel",
       required: false,
@@ -48,6 +48,10 @@ const channelSchema = new Schema(
         required: false,
       },
     ],
+    photo: {
+      type: String,
+      required: false,
+    },
   },
   { timestamps: true }
 );

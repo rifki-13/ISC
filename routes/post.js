@@ -27,7 +27,7 @@ router.post(
           name: "attachments",
           maxCount: 10,
         },
-        { name: "videos", maxCount: 3 },
+        // { name: "videos", maxCount: 3 },
       ])
     ),
     isAuth,
@@ -49,7 +49,7 @@ router.put(
           name: "attachments",
           maxCount: 10,
         },
-        { name: "videos", maxCount: 3 },
+        // { name: "videos", maxCount: 3 },
       ])
     ),
     isAuth,

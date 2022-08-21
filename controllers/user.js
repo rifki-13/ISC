@@ -34,6 +34,8 @@ exports.addUser = (req, res, next) => {
   const username = req.body.username;
   const password = req.body.password;
   const name = req.body.name;
+  const jurusan = req.body.jurusan;
+  const prodi = req.body.prodi;
   //generating hashed password
   bcrypt.genSalt(10).then((salt) => {
     bcrypt.hash(password, salt).then((hash) => {
@@ -42,6 +44,8 @@ exports.addUser = (req, res, next) => {
         username: username,
         password: hash,
         name: name,
+        jurusan: jurusan,
+        prodi: prodi,
       });
       //save user model to database
       user
@@ -80,12 +84,12 @@ exports.enterChannel = (req, res, next) => {
       return User.findById(userId);
     })
     .then((user) => {
-      if (user.assignedChannel.includes(channelEntered._id)) {
+      if (user.assigned_channel.includes(channelEntered._id)) {
         const error = new Error("User has already in this channel");
         error.statusCode = 400;
         throw error;
       }
-      user.assignedChannel.push(channelEntered._id);
+      user.assigned_channel.push(channelEntered._id);
       channelEntered.member.push(user._id);
       channelEntered.save();
       return user.save();
@@ -110,12 +114,12 @@ exports.quitChannel = (req, res, next) => {
   User.findById(userId)
     .then((user) => {
       //throw error if user not in this channel
-      if (!user.assignedChannel.includes(channelId)) {
+      if (!user.assigned_channel.includes(channelId)) {
         const error = new Error("This user does not belong in this channel");
         error.statusCode = 403;
         throw error;
       }
-      user.assignedChannel.pull(channelId);
+      user.assigned_channel.pull(channelId);
       return user.save();
     })
     .then(() => {

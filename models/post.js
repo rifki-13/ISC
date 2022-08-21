@@ -1,16 +1,6 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-/**
- *  title
- *  author : user object id
- *  datePosted
- *  channel : channel object id
- *  active
- *  kategori : 'Surat Edaran', 'Event', 'Notice', 'Lost and Found'
- *  content : {
- *      text
- *  }
- */
+
 //skema content
 const contentSchema = new Schema({
   text: {
@@ -24,12 +14,6 @@ const contentSchema = new Schema({
     },
   ],
   images: [
-    {
-      type: String,
-      required: false,
-    },
-  ],
-  videos: [
     {
       type: String,
       required: false,
@@ -89,7 +73,7 @@ const postSchema = new Schema(
       ref: "User",
       required: true,
     },
-    validityDate: {
+    validity_date: {
       type: Date,
       required: false,
     },
@@ -105,7 +89,7 @@ const postSchema = new Schema(
       required: false,
       default: false,
     },
-    readOnly: {
+    read_only: {
       type: Boolean,
       required: false,
       default: false,
