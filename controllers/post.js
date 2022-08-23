@@ -30,7 +30,8 @@ exports.addPost = (req, res, next) => {
   //model construct
   const title = req.body.title;
   const author = req.userId;
-  const channel = req.body.channelId;
+  console.log(author);
+  const channel = req.body.channel;
   const kategori = req.body.kategori;
   let creator;
   let createdPost;
@@ -63,7 +64,7 @@ exports.addPost = (req, res, next) => {
   //validate if this user belong to channel that post directed to
   User.findById(author)
     .then((user) => {
-      if (!user.assigned_channel.includes(channel)) {
+      if (!channel.some((c) => user.assigned_channel.includes(c))) {
         const error = new Error(
           "This user does cant create post in this channel"
         );
@@ -75,7 +76,6 @@ exports.addPost = (req, res, next) => {
       const post = new Post({
         title: title,
         author: author,
-        datePosted: new Date(),
         channel: channel,
         kategori: kategori,
         content: content,
@@ -270,8 +270,10 @@ exports.deletePost = (req, res, next) => {
 };
 
 exports.getPostsByChannel = (req, res, next) => {
-  const channelId = req.params.channelId;
-  Post.find({ channel: channelId })
+  const channelId = JSON.parse(req.params.channelId);
+  Post.find()
+    .where("channel")
+    .in([...channelId])
     .then((post) => {
       if (!post) {
         const error = new Error("Post not found");

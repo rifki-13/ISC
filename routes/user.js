@@ -12,7 +12,10 @@ const upload = multerHelper.uploadUserPhoto;
 const router = express.Router();
 
 //GET /user/ || get all user
-router.get("/", isAuth, userController.getUsers); //get all user
+router.get("/", isAuth, userController.getUsers); //get all user\
+
+//TODO : Get user data by id
+router.get("/:userId", userController.getUser);
 
 //POST /user/ || create user
 router.post(
@@ -57,6 +60,6 @@ router.post("/posts/:postId/archive", isAuth, userController.archivePost);
 router.delete("/posts/:postId/archive", isAuth, userController.unarchivePost);
 
 //route get post based on userid || GET /posts/user
-router.get("/posts", isAuth, userController.getOwnPost);
+router.get("/posts/own", isAuth, userController.getOwnPost);
 
 module.exports = router;

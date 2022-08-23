@@ -21,6 +21,26 @@ exports.getUsers = (req, res, next) => {
     });
 };
 
+//TODO : get data user
+exports.getUser = (req, res, next) => {
+  const userId = req.params.userId;
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        const error = new Error("User doesn't exist");
+        error.statusCode = 404;
+        throw error;
+      }
+      res.status(200).json({ message: "User's data fetched", user: user });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
 //create user || POST /user/
 exports.addUser = (req, res, next) => {
   //error handling
@@ -77,7 +97,7 @@ exports.enterChannel = (req, res, next) => {
       //wrong entry code
       if (!channel) {
         const error = new Error("Wrong entry code");
-        error.statusCode = 401;
+        error.statusCode = 404;
         throw error;
       }
       channelEntered = channel;

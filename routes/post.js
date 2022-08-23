@@ -60,7 +60,7 @@ router.put(
 //route delete post || DELETE /post/:postId
 router.delete("/:postId", isAuth, postController.deletePost);
 
-//route get post based on channel id || POST /posts/channel/:channelId
+//route get post based on channel id || GET /posts/channel/:channelId
 router.get("/channel/:channelId", isAuth, postController.getPostsByChannel);
 
 //route post comment || POST /post/:postId/comment
