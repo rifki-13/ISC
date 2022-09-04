@@ -14,8 +14,10 @@ const router = express.Router();
 //GET /user/ || get all user
 router.get("/", isAuth, userController.getUsers); //get all user\
 
-//TODO : Get user data by id
 router.get("/:userId", userController.getUser);
+
+//TODO get user data without sensitif data
+router.get("/user-data/:userId", userController.getUserData);
 
 //POST /user/ || create user
 router.post(
@@ -32,7 +34,7 @@ router.post(
 router.post("/channel/:entryCode", isAuth, userController.enterChannel);
 
 //POST /users/channel/:channelId/quit
-router.post("/channel/:channelId/quit", isAuth, userController.quitChannel);
+router.delete("/channel/:channelId/quit", isAuth, userController.quitChannel);
 
 //POST /user/change-photo
 router.post(

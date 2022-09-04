@@ -21,6 +21,7 @@ exports.getChannels = (req, res, next) => {
 exports.getChannelsData = (req, res, next) => {
   const channelIds = JSON.parse(req.params.channelIds);
   Channel.find({ _id: channelIds })
+    .populate("member")
     .then((result) => {
       if (!result) {
         const error = new Error("Channels not founds");

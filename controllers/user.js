@@ -6,6 +6,7 @@ const User = require("../models/user");
 const Channel = require("../models/channel");
 const Post = require("../models/post");
 const s3Helpers = require("../helpers/s3");
+const mongoose = require("mongoose");
 
 //get all user || GET /user/
 exports.getUsers = (req, res, next) => {
@@ -21,7 +22,6 @@ exports.getUsers = (req, res, next) => {
     });
 };
 
-//TODO : get data user
 exports.getUser = (req, res, next) => {
   const userId = req.params.userId;
   User.findById(userId)
@@ -32,6 +32,31 @@ exports.getUser = (req, res, next) => {
         throw error;
       }
       res.status(200).json({ message: "User's data fetched", user: user });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+exports.getUserData = (req, res, next) => {
+  const userId = req.params.userId;
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        const error = new Error("User doesn't exist");
+        error.statusCode = 404;
+        throw error;
+      }
+      const userData = {
+        name: user.name,
+        username: user.username,
+        jurusan: user.jurusan,
+        prodi: user.prodi,
+      };
+      res.status(200).json({ message: "User's data fetched", user: userData });
     })
     .catch((err) => {
       if (!err.statusCode) {
@@ -393,7 +418,7 @@ exports.unarchivePost = (req, res, next) => {
 };
 
 exports.getOwnPost = (req, res, next) => {
-  const userId = req.userId;
+  const userId = mongoose.Types.ObjectId(req.userId);
   Post.find({ author: userId })
     .then((post) => {
       //not found error

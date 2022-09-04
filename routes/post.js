@@ -67,7 +67,7 @@ router.get("/channel/:channelId", isAuth, postController.getPostsByChannel);
 router.post(
   "/:postId/comment",
   isAuth,
-  [body("content").isLength({ max: 50, min: 1 })],
+  [body("content").isLength({ max: 200, min: 1 })],
   postController.postComment
 );
 
@@ -75,7 +75,7 @@ router.post(
 router.put(
   "/:postId/comment/:commentId",
   isAuth,
-  [body("comment").isLength({ max: 50, min: 1 })],
+  [body("content").isLength({ max: 200, min: 1 })],
   postController.editComment
 );
 

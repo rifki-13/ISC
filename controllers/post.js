@@ -31,8 +31,15 @@ exports.addPost = (req, res, next) => {
   const title = req.body.title;
   const author = req.userId;
   console.log(author);
-  const channel = req.body.channel;
+  const channel = JSON.parse(req.body.channel);
   const kategori = req.body.kategori;
+  let validDate = null;
+  console.log("valid date + " + req.body.validDate);
+  if (req.body.validDate) {
+    validDate = new Date(req.body.validDate);
+  }
+  const readOnly = req.body.readOnly;
+  const sendNotif = req.body.sendNotif;
   let creator;
   let createdPost;
   let images = [];
@@ -73,13 +80,20 @@ exports.addPost = (req, res, next) => {
       }
       creator = user;
       //create post
-      const post = new Post({
+      let postObj = {
         title: title,
         author: author,
         channel: channel,
+        read_only: readOnly,
         kategori: kategori,
         content: content,
-      });
+      };
+      if (validDate) {
+        postObj = { ...postObj, validity_date: validDate };
+        // console.log(postObj);
+      }
+      const post = new Post({ ...postObj });
+      console.log(post);
       //save post
       return post.save();
     })
@@ -107,6 +121,14 @@ exports.addPost = (req, res, next) => {
 exports.getPost = (req, res, next) => {
   const postId = req.params.postId;
   Post.findById(postId)
+    .populate("author")
+    .populate([
+      {
+        path: "comments",
+        populate: "author",
+      },
+      { path: "comments.replies", populate: "author" },
+    ])
     .then((post) => {
       if (!post) {
         const error = new Error("Post not found");
@@ -220,6 +242,7 @@ exports.deletePost = (req, res, next) => {
   const postId = req.params.postId;
   Post.findById(postId)
     .then((post) => {
+      //TODO : loop through all users to delete deleted post from saved post id
       if (!post) {
         const error = new Error("Post not found");
         error.statusCode = 404;
@@ -239,16 +262,13 @@ exports.deletePost = (req, res, next) => {
       //delete images
       if (images.length > 0) {
         keys = s3Helpers.extractKeys(images, keys);
+        s3Helpers.deleteObjects(keys);
       }
-      //delete videos
-      // if (videos.length > 0) {
-      //   keys = s3Helpers.extractKeys(videos, keys);
-      // }
       //delete attachment
       if (attachments.length > 0) {
         keys = s3Helpers.extractKeys(attachments, keys);
+        s3Helpers.deleteObjects(keys);
       }
-      s3Helpers.deleteObjects(keys);
       return Post.findByIdAndRemove(postId);
     })
     .then(() => {
@@ -274,6 +294,14 @@ exports.getPostsByChannel = (req, res, next) => {
   Post.find()
     .where("channel")
     .in([...channelId])
+    .populate("author")
+    .populate([
+      {
+        path: "comments",
+        populate: "author",
+      },
+      { path: "comments.replies", populate: "author" },
+    ])
     .then((post) => {
       if (!post) {
         const error = new Error("Post not found");
@@ -384,12 +412,6 @@ exports.deleteComment = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
-      //validating user
-      if (post.author.toString() !== req.userId) {
-        const error = new Error("Not Authorized");
-        error.statusCode = 403;
-        throw error;
-      }
       post.comments.id(commentId).remove();
       return post.save();
     })
@@ -415,7 +437,7 @@ exports.replyComment = (req, res, next) => {
   //extract request
   const postId = req.params.postId;
   const commentId = req.params.commentId;
-  const userId = req.userId;
+  const author = req.userId;
   const content = req.body.content;
   Post.findById(postId)
     .then((post) => {
@@ -427,7 +449,7 @@ exports.replyComment = (req, res, next) => {
       }
       const comment = post.comments.id(commentId);
       comment.replies.push({
-        user_id: userId,
+        author: author,
         content: content,
       });
       return post.save();
@@ -505,13 +527,13 @@ exports.deleteReply = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
-      const comment = post.comments.id(commentId);
-      if (comment.author !== userId) {
+      const reply = post.comments.id(commentId).replies.id(replyId);
+      if (reply.author.toString() !== userId.toString()) {
         const error = new Error("Not authorized");
         error.statusCode = 403;
         throw error;
       }
-      comment.replies.id(replyId).remove();
+      reply.remove();
       return post.save();
     })
     .then((post) => {

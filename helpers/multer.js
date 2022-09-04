@@ -4,7 +4,13 @@ const config = require("config");
 const s3Helpers = require("../helpers/s3");
 const s3 = s3Helpers.client;
 
-const imageWL = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+const imageWL = [
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/*",
+];
 
 // const videoWL = ["video/x-msvideo", "video/mp4", "video/mpeg", "video/webm"];
 
@@ -56,7 +62,7 @@ exports.uploadUserPhoto = multer({
     },
   }),
   fileFilter: (req, file, cb) => {
-    if (!imageWL.includes(file.fieldname)) {
+    if (!imageWL.includes(file.mimetype)) {
       return cb(new Error("image file only"), false);
     }
     cb(null, true);

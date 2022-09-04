@@ -24,7 +24,7 @@ const contentSchema = new Schema({
 //skema reply
 const replySchema = new Schema(
   {
-    user_id: {
+    author: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
@@ -84,11 +84,11 @@ const postSchema = new Schema(
         required: true,
       },
     ],
-    urgent: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
+    // urgent: {
+    //   type: Boolean,
+    //   required: false,
+    //   default: false,
+    // },
     read_only: {
       type: Boolean,
       required: false,
