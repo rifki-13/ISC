@@ -64,4 +64,7 @@ router.delete("/posts/:postId/archive", isAuth, userController.unarchivePost);
 //route get post based on userid || GET /posts/user
 router.get("/posts/own", isAuth, userController.getOwnPost);
 
+//route to save expo push token
+router.post("/expo-token", isAuth, userController.saveExpoToken);
+
 module.exports = router;

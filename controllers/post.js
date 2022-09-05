@@ -3,6 +3,8 @@ const { validationResult } = require("express-validator");
 const Post = require("../models/post");
 const User = require("../models/user");
 const s3Helpers = require("../helpers/s3");
+const { Expo } = require("expo-server-sdk");
+const axios = require("axios");
 
 //get all post || GET /post/
 exports.getPosts = (req, res, next) => {
@@ -30,16 +32,14 @@ exports.addPost = (req, res, next) => {
   //model construct
   const title = req.body.title;
   const author = req.userId;
-  console.log(author);
   const channel = JSON.parse(req.body.channel);
   const kategori = req.body.kategori;
   let validDate = null;
-  console.log("valid date + " + req.body.validDate);
   if (req.body.validDate) {
     validDate = new Date(req.body.validDate);
   }
   const readOnly = req.body.readOnly;
-  const sendNotif = req.body.sendNotif;
+  const sendNotif = req.body.sendNotification;
   let creator;
   let createdPost;
   let images = [];
@@ -51,11 +51,6 @@ exports.addPost = (req, res, next) => {
         images.push(element.location);
       });
     }
-    // if (req.files.videos) {
-    //   req.files.videos.forEach((element) => {
-    //     videos.push(element.location);
-    //   });
-    // }
     if (req.files.attachments) {
       req.files.attachments.forEach((element) => {
         attachments.push(element.location);
@@ -65,7 +60,6 @@ exports.addPost = (req, res, next) => {
   const content = {
     text: req.body.text,
     images: images,
-    // videos: videos,
     attachments: attachments,
   };
   //validate if this user belong to channel that post directed to
@@ -93,7 +87,6 @@ exports.addPost = (req, res, next) => {
         // console.log(postObj);
       }
       const post = new Post({ ...postObj });
-      console.log(post);
       //save post
       return post.save();
     })
@@ -103,6 +96,31 @@ exports.addPost = (req, res, next) => {
       return creator.save();
     })
     .then(() => {
+      if (sendNotif) {
+        //send notification
+        let expoTokens = [];
+        User.find().then((res) => {
+          res.forEach((el) => {
+            if (Expo.isExpoPushToken(el.expo_push_token)) {
+              expoTokens.push(el.expo_push_token);
+            }
+          });
+          axios({
+            url: "https://exp.host/--/api/v2/push/send",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "post",
+            data: {
+              to: expoTokens,
+              title: createdPost.title,
+              body: createdPost.content.text,
+            },
+          }).then((res) => {
+            console.log(res.data);
+          });
+        });
+      }
       res.status(201).json({
         message: "Post Created",
         post: createdPost,

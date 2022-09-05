@@ -57,11 +57,13 @@ const userSchema = new Schema(
         required: false,
       },
     ],
-    managed_channel: {
-      type: Schema.Types.ObjectId,
-      ref: "Channel",
-      required: false,
-    },
+    managed_channel: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Channel",
+        required: false,
+      },
+    ],
     role: [
       {
         type: String,
@@ -70,6 +72,10 @@ const userSchema = new Schema(
         },
       },
     ],
+    expo_push_token: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,

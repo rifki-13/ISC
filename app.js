@@ -9,6 +9,7 @@ const userRoutes = require("./routes/user");
 const channelRoutes = require("./routes/channel");
 const authRoutes = require("./routes/auth");
 const postRoutes = require("./routes/post");
+const adminRoutes = require("./routes/admin");
 
 const app = express();
 
@@ -30,6 +31,7 @@ app.use("/users", userRoutes);
 app.use("/channels", channelRoutes);
 app.use("/auth", authRoutes);
 app.use("/posts", postRoutes);
+app.use("/admin", adminRoutes);
 
 //error middleware catch error dan mengirimkan respon message error
 app.use((error, req, res, next) => {

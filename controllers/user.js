@@ -439,3 +439,20 @@ exports.getOwnPost = (req, res, next) => {
       next(err);
     });
 };
+
+exports.saveExpoToken = (req, res, next) => {
+  const expoToken = req.body.expoToken;
+  const userId = req.userId;
+  User.findById(userId)
+    .then((user) => {
+      user.expo_push_token = expoToken;
+      user.save();
+      res.status(200).json({ message: "Expo Push Token Saved" });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
