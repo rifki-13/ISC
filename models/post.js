@@ -84,11 +84,6 @@ const postSchema = new Schema(
         required: true,
       },
     ],
-    // urgent: {
-    //   type: Boolean,
-    //   required: false,
-    //   default: false,
-    // },
     read_only: {
       type: Boolean,
       required: false,

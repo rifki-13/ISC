@@ -2,6 +2,7 @@ const { validationResult } = require("express-validator");
 
 const Post = require("../models/post");
 const User = require("../models/user");
+const ReportedPost = require("../models/reported_post");
 const s3Helpers = require("../helpers/s3");
 const { Expo } = require("expo-server-sdk");
 const axios = require("axios");
@@ -84,7 +85,6 @@ exports.addPost = (req, res, next) => {
       };
       if (validDate) {
         postObj = { ...postObj, validity_date: validDate };
-        // console.log(postObj);
       }
       const post = new Post({ ...postObj });
       //save post
@@ -95,13 +95,16 @@ exports.addPost = (req, res, next) => {
       creator.posts.push(post);
       return creator.save();
     })
-    .then(() => {
-      if (sendNotif) {
+    .then((creator) => {
+      if (sendNotif === "true") {
         //send notification
         let expoTokens = [];
         User.find().then((res) => {
           res.forEach((el) => {
-            if (Expo.isExpoPushToken(el.expo_push_token)) {
+            if (
+              Expo.isExpoPushToken(el.expo_push_token) &&
+              creator.expo_push_token !== el.expo_push_token
+            ) {
               expoTokens.push(el.expo_push_token);
             }
           });
@@ -566,4 +569,32 @@ exports.deleteReply = (req, res, next) => {
       }
       next(err);
     });
+};
+
+exports.reportPost = async (req, res, next) => {
+  const userId = req.userId;
+  const { postId } = req.params;
+  const { reportedTo, reason, description } = req.body;
+  console.log(req);
+  try {
+    let post = await Post.findById(postId);
+    post.status = "reported";
+    post.save();
+    const reported = await ReportedPost.create({
+      postId: post._id,
+      reported_to: reportedTo,
+      reporter: userId,
+      reason: reason,
+      description: description,
+    });
+    res.status(200).json({
+      message: "Post reported successfully",
+      reported: reported,
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };

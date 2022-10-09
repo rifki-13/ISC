@@ -1,112 +1,49 @@
 const express = require("express");
-const { body } = require("express-validator");
 
 //import post controller
 const postController = require("../controllers/post");
 
 //import middleware
 const isAuth = require("../middleware/is-auth");
-const multerHelper = require("../helpers/multer");
-
-//upload multer
-const upload = multerHelper.uploadPostAttachment;
+const uploadPostAttachmentMiddleware = require("../middleware/uploader/post-attachment-middleware");
+const commentValidator = require("../middleware/validator/comment-reply-validator");
 
 const router = express.Router();
 
-//route get all post || GET /post/
-router.get("/", isAuth, postController.getPosts);
+router
+  .route("/")
+  .get(isAuth, postController.getPosts) //route get all post
+  .post([isAuth, uploadPostAttachmentMiddleware], postController.addPost); //route create post
 
-//route create post || POST /post/
-router.post(
-  "/",
-  [
-    express().use(
-      upload.fields([
-        { name: "images", maxCount: 10 },
-        {
-          name: "attachments",
-          maxCount: 10,
-        },
-        // { name: "videos", maxCount: 3 },
-      ])
-    ),
-    isAuth,
-  ],
-  postController.addPost
-);
+router
+  .route("/:postId")
+  .get(isAuth, postController.getPost) //route get 1 post
+  .put([isAuth, uploadPostAttachmentMiddleware], postController.updatePost) //route update post
+  .delete(isAuth, postController.deletePost); //route delete post
 
-//route get 1 post || GET /post/:postId
-router.get("/:postId", isAuth, postController.getPost);
+//report post
+router.route("/:postId/report").post(isAuth, postController.reportPost);
 
-//route update post || PUT /post/:postId
-router.put(
-  "/:postId",
-  [
-    express().use(
-      upload.fields([
-        { name: "images", maxCount: 10 },
-        {
-          name: "attachments",
-          maxCount: 10,
-        },
-        // { name: "videos", maxCount: 3 },
-      ])
-    ),
-    isAuth,
-  ],
-  postController.updatePost
-);
+router
+  .route("/channel/:channelId")
+  .get(isAuth, postController.getPostsByChannel); //route get post based on channel id
 
-//route delete post || DELETE /post/:postId
-router.delete("/:postId", isAuth, postController.deletePost);
+router
+  .route("/:postId/comment")
+  .post([isAuth, commentValidator], postController.postComment); //route post comment
 
-//route get post based on channel id || GET /posts/channel/:channelId
-router.get("/channel/:channelId", isAuth, postController.getPostsByChannel);
+router
+  .route("/:postId/comment/:commentId")
+  .put([isAuth, commentValidator], postController.editComment) //route edit comment
+  .delete(isAuth, postController.deleteComment); //route delete comment
 
-//route post comment || POST /post/:postId/comment
-router.post(
-  "/:postId/comment",
-  isAuth,
-  [body("content").isLength({ max: 200, min: 1 })],
-  postController.postComment
-);
+router
+  .route("/:postId/comments/:commentId/reply")
+  .post([isAuth, commentValidator], postController.replyComment); //route reply comments
 
-//route edit comment || PUT /posts/:postId/comment/:commentId
-router.put(
-  "/:postId/comment/:commentId",
-  isAuth,
-  [body("content").isLength({ max: 200, min: 1 })],
-  postController.editComment
-);
-
-//route delete comment || DELETE /posts/:postId/comment/:commentId
-router.delete(
-  "/:postId/comment/:commentId",
-  isAuth,
-  postController.deleteComment
-);
-
-//route reply comments || POST /posts/:postId/comments/:commentId/reply
-router.post(
-  "/:postId/comments/:commentId/reply",
-  isAuth,
-  [body("content").isLength({ max: 50, min: 1 })],
-  postController.replyComment
-);
-
-//route edit reply || PUT /posts/:postId/comments/:commentId/reply/:replyId/edit
-router.put(
-  "/:postId/comments/:commentId/reply/:replyId",
-  isAuth,
-  [body("content").isLength({ max: 50, min: 1 })],
-  postController.editReply
-);
-
-//route delete reply || DELETE /posts/:postId/comments/:commentId/reply/:replyId/edit
-router.delete(
-  "/:postId/comments/:commentId/reply/:replyId",
-  isAuth,
-  postController.deleteReply
-);
+router
+  .route("/:postId/comments/:commentId/reply/:replyId")
+  .put([isAuth, commentValidator], postController.editReply) //route edit reply
+  .delete(isAuth, postController.deleteReply); //route delete reply
 
 module.exports = router;
