@@ -142,6 +142,7 @@ exports.addPost = (req, res, next) => {
 exports.getPost = (req, res, next) => {
   const postId = req.params.postId;
   Post.findById(postId)
+    .populate("channel")
     .populate("author")
     .populate([
       {
@@ -337,6 +338,37 @@ exports.getPostsByChannel = (req, res, next) => {
       }
       next(err);
     });
+};
+
+exports.getPostsByChannelStatus = async (req, res, next) => {
+  const channelId = JSON.parse(req.params.channelId);
+  const status = req.params.status;
+  let posts = [];
+  try {
+    posts = await Post.find({ status: status })
+      .where("channel")
+      .in([...channelId])
+      .populate("channel")
+      .populate("author")
+      .populate([
+        {
+          path: "comments",
+          populate: "author",
+        },
+        { path: "comments.replies", populate: "author" },
+      ]);
+    res.status(200).json({ message: "Post Found", post: posts });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+  if (!posts) {
+    const error = new Error("Post not found");
+    error.statusCode = 404;
+    throw error;
+  }
 };
 
 exports.postComment = (req, res, next) => {
@@ -575,13 +607,12 @@ exports.reportPost = async (req, res, next) => {
   const userId = req.userId;
   const { postId } = req.params;
   const { reportedTo, reason, description } = req.body;
-  console.log(req);
   try {
     let post = await Post.findById(postId);
     post.status = "reported";
     post.save();
     const reported = await ReportedPost.create({
-      postId: post._id,
+      post: post._id,
       reported_to: reportedTo,
       reporter: userId,
       reason: reason,
@@ -591,6 +622,87 @@ exports.reportPost = async (req, res, next) => {
       message: "Post reported successfully",
       reported: reported,
     });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.deleteReportedStatus = async (req, res, next) => {
+  const { postId } = req.params;
+  try {
+    const post = await Post.findById(postId);
+    post.status = "active";
+    const reportedPost = await ReportedPost.findOne({ post: postId });
+    if (reportedPost) {
+      await post.save();
+      await reportedPost.remove();
+    }
+    res.status(200).json({
+      message: "Post reported status is lifted",
+      post: post,
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.getReportedPostData = async (req, res, next) => {
+  const channelId = JSON.parse(req.params.channelId);
+  try {
+    const reportedPosts = await ReportedPost.find()
+      .where("reported_to")
+      .in([...channelId])
+      .populate("post")
+      .populate("reporter")
+      .populate("reported_to");
+    console.log(reportedPosts);
+    res.status(200).json({
+      message: "reported post data fetched",
+      reportedPost: reportedPosts,
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.removeChannelFromPost = async (req, res, next) => {
+  const { postId, channelId } = req.params;
+  try {
+    await ReportedPost.findOneAndDelete({ post: postId });
+    const post = await Post.findById(postId);
+    post.channel.pull(channelId);
+    post.status = "active";
+    await post.save();
+    res.status(200).json({ message: "Post removed", post: post });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.deleteReportedPost = async (req, res, next) => {
+  const { postId } = req.params;
+  try {
+    const post = await Post.findById(postId);
+    const reportedPost = await ReportedPost.findOne({ post: postId });
+    if (post && reportedPost) {
+      await post.remove();
+      await reportedPost.remove();
+      res.status(200).json({ message: "reported post deleted" });
+    } else {
+      res.status(404).json({ message: "reported post not found" });
+    }
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

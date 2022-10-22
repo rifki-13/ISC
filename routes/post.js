@@ -22,11 +22,20 @@ router
   .delete(isAuth, postController.deletePost); //route delete post
 
 //report post
-router.route("/:postId/report").post(isAuth, postController.reportPost);
+router
+  .route("/:postId/report")
+  .post(isAuth, postController.reportPost)
+  //TODO : add admin middleware later, after creating reported post page in admin client
+  .delete(isAuth, postController.deleteReportedStatus);
 
 router
   .route("/channel/:channelId")
   .get(isAuth, postController.getPostsByChannel); //route get post based on channel id
+
+//get post by channel and status
+router
+  .route("/channel/:channelId/:status")
+  .get(isAuth, postController.getPostsByChannelStatus);
 
 router
   .route("/:postId/comment")
@@ -45,5 +54,17 @@ router
   .route("/:postId/comments/:commentId/reply/:replyId")
   .put([isAuth, commentValidator], postController.editReply) //route edit reply
   .delete(isAuth, postController.deleteReply); //route delete reply
+
+router
+  .route("/reported/channels/:channelId")
+  .get(postController.getReportedPostData);
+
+router
+  .route("/reported/:postId")
+  .delete(isAuth, postController.deleteReportedPost);
+
+router
+  .route("/:postId/channels/:channelId")
+  .delete(isAuth, postController.removeChannelFromPost);
 
 module.exports = router;

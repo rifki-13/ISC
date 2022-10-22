@@ -11,8 +11,18 @@ const upload = multerHelper.uploadUserPhoto;
 
 const router = express.Router();
 
-//GET /user/ || get all user
-router.get("/", isAuth, userController.getUsers); //get all user\
+//route /
+router
+  .route("/")
+  .get(isAuth, userController.getUsers) //get all user
+  .post(
+    [
+      body("username").trim().isLength({ max: 30 }),
+      body("password").trim().isLength({ max: 16 }),
+      body("name").trim().isLength({ max: 30 }),
+    ],
+    userController.addUser
+  ); //create user
 
 router.get("/:userId", userController.getUser);
 
@@ -20,15 +30,6 @@ router.get("/:userId", userController.getUser);
 router.get("/user-data/:userId", userController.getUserData);
 
 //POST /user/ || create user
-router.post(
-  "/",
-  [
-    body("username").trim().isLength({ max: 30 }),
-    body("password").trim().isLength({ max: 16 }),
-    body("name").trim().isLength({ max: 30 }),
-  ],
-  userController.addUser
-); //create user
 
 //POST /user/assign
 router.post("/channel/:entryCode", isAuth, userController.enterChannel);
@@ -62,7 +63,7 @@ router.post("/posts/:postId/archive", isAuth, userController.archivePost);
 router.delete("/posts/:postId/archive", isAuth, userController.unarchivePost);
 
 //route get post based on userid || GET /posts/user
-router.get("/posts/own", isAuth, userController.getOwnPost);
+router.route("/:userId/posts").get(isAuth, userController.getOwnPost);
 
 //route to save expo push token
 router.post("/expo-token", isAuth, userController.saveExpoToken);

@@ -418,19 +418,23 @@ exports.unarchivePost = (req, res, next) => {
 };
 
 exports.getOwnPost = (req, res, next) => {
-  const userId = mongoose.Types.ObjectId(req.userId);
+  const userId = mongoose.Types.ObjectId(req.params.userId);
   Post.find({ author: userId })
+    .populate("channel")
+    .populate("author")
+    .populate([
+      {
+        path: "comments",
+        populate: "author",
+      },
+      { path: "comments.replies", populate: "author" },
+    ])
     .then((post) => {
       //not found error
-      if (!post) {
-        const error = new Error("Post not found");
-        error.statusCode = 404;
-        throw error;
-      }
       return post;
     })
     .then((result) => {
-      res.status(200).json({ message: "post by " + userId, post: result });
+      res.status(200).json({ message: "post by " + userId, posts: result });
     })
     .catch((err) => {
       if (!err.statusCode) {
