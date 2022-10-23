@@ -32,6 +32,7 @@ app.use("/channels", channelRoutes);
 app.use("/auth", authRoutes);
 app.use("/posts", postRoutes);
 app.use("/admin", adminRoutes);
+//TODO : consider adding reported routes
 
 //error middleware catch error dan mengirimkan respon message error
 app.use((error, req, res, next) => {

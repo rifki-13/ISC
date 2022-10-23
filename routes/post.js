@@ -28,6 +28,11 @@ router
   //TODO : add admin middleware later, after creating reported post page in admin client
   .delete(isAuth, postController.deleteReportedStatus);
 
+//Enable disable comment
+router
+  .route("/:postId/set/comment/:value")
+  .put(isAuth, postController.toggleComment);
+
 router
   .route("/channel/:channelId")
   .get(isAuth, postController.getPostsByChannel); //route get post based on channel id

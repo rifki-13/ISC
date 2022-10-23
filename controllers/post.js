@@ -695,14 +695,38 @@ exports.deleteReportedPost = async (req, res, next) => {
   const { postId } = req.params;
   try {
     const post = await Post.findById(postId);
+    const user = await User.findById(post.author);
     const reportedPost = await ReportedPost.findOne({ post: postId });
     if (post && reportedPost) {
       await post.remove();
+      user.posts.pull(postId);
+      await user.save();
       await reportedPost.remove();
+      //loop through all user to remove saved post id
+      const users = await User.find({ saved_post: postId });
+      for (const u of users) {
+        u.pull(postId);
+        u.save();
+      }
       res.status(200).json({ message: "reported post deleted" });
     } else {
       res.status(404).json({ message: "reported post not found" });
     }
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.toggleComment = async (req, res, next) => {
+  const { postId, value } = req.params;
+  try {
+    const post = await Post.findById(postId);
+    post.read_only = value !== "enable";
+    await post.save();
+    res.status(200).json({ message: `Comment ${value}d` });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
