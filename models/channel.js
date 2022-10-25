@@ -1,6 +1,19 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
+const channelSettingSchema = new Schema({
+  post_approval: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
+  entry_through_code: {
+    type: Boolean,
+    required: true,
+    default: true,
+  },
+});
+
 //skema channel
 const channelSchema = new Schema(
   {
@@ -51,6 +64,10 @@ const channelSchema = new Schema(
     photo: {
       type: String,
       required: false,
+    },
+    setting: {
+      type: channelSettingSchema,
+      required: true,
     },
   },
   { timestamps: true }

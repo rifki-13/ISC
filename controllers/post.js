@@ -264,7 +264,6 @@ exports.deletePost = (req, res, next) => {
   const postId = req.params.postId;
   Post.findById(postId)
     .then((post) => {
-      //TODO : loop through all users to delete deleted post from saved post id
       if (!post) {
         const error = new Error("Post not found");
         error.statusCode = 404;
@@ -278,7 +277,6 @@ exports.deletePost = (req, res, next) => {
       }
       //extract array
       const images = post.content.images;
-      // const videos = post.content.videos;
       const attachments = post.content.attachments;
       let keys = [];
       //delete images
@@ -301,6 +299,13 @@ exports.deletePost = (req, res, next) => {
       return user.save();
     })
     .then(() => {
+      //pull post id from saved post
+      User.find({ saved_post: postId }).then((res) => {
+        for (const u of res) {
+          u.saved_post.pull(postId);
+          u.save();
+        }
+      });
       res.status(200).json({ message: "Post deleted" });
     })
     .catch((err) => {

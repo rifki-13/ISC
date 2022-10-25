@@ -2,6 +2,11 @@ const { validationResult } = require("express-validator");
 
 const Channel = require("../models/channel");
 
+//helper
+const isJsonParsable = require("../helpers/is-json-parsable");
+const convertUrlToKey = require("../helpers/url-to-aws-key");
+const s3Helpers = require("../helpers/s3");
+
 //return all list channel || GET /channel/
 exports.getChannels = (req, res, next) => {
   Channel.find()
@@ -18,27 +23,32 @@ exports.getChannels = (req, res, next) => {
     });
 };
 
-exports.getChannelsData = (req, res, next) => {
-  const channelIds = JSON.parse(req.params.channelIds);
-  Channel.find({ _id: channelIds })
-    .populate("member")
-    .populate("admin")
-    .then((result) => {
-      if (!result) {
-        const error = new Error("Channels not founds");
-        error.statusCode = 404;
-        throw error;
-      }
-      res
-        .status(200)
-        .json({ message: "All Channel Data fetched", channels: result });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
+exports.getChannelsData = async (req, res, next) => {
+  let query;
+  const channelIds = req.params.channelId;
+  if (isJsonParsable(channelIds)) {
+    query = Channel.find({ _id: JSON.parse(channelIds) });
+  } else {
+    query = Channel.findById(channelIds);
+  }
+  try {
+    const channel = await query
+      .populate("member", "_id name photo")
+      .populate("admin", "_id name photo");
+    if (!channel) {
+      const error = new Error("Channels not founds");
+      error.statusCode = 404;
+      next(error);
+    }
+    res
+      .status(200)
+      .json({ message: "All Channel Data fetched", channels: channel });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 //create empty channel || POST /channel/
@@ -53,7 +63,7 @@ exports.addChannel = (req, res, next) => {
   //model construct
   const name = req.body.name;
   const desc = req.body.desc;
-  const entry_code = req.body.entry_code;
+  const entry_code = req.body.entryCode;
   const channel = new Channel({
     name: name,
     desc: desc,
@@ -79,28 +89,8 @@ exports.addChannel = (req, res, next) => {
     });
 };
 
-// get 1 channel based on id || Get /channel/:channelId
-exports.getChannel = (req, res, next) => {
-  const channelId = req.params.channelId;
-  Channel.findById(channelId)
-    .then((channel) => {
-      if (!channel) {
-        const error = new Error("Channel not found");
-        error.statusCode = 404;
-        throw error;
-      }
-      res.status(200).json({ message: "Channel exist", channel: channel });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
-};
-
 //edit channel based on Id || PUT /channel/:channelId
-exports.updateChannel = (req, res, next) => {
+exports.updateChannel = async (req, res, next) => {
   const channelId = req.params.channelId;
   //error validation handling
   const errors = validationResult(req);
@@ -111,27 +101,27 @@ exports.updateChannel = (req, res, next) => {
   }
   const name = req.body.name;
   const desc = req.body.desc;
-  // const entry_code = req.body.entry_code; //entry code is not changeable
-  Channel.findById(channelId)
-    .then((channel) => {
-      if (!channel) {
-        const error = new Error("Channel not found");
-        error.statusCode = 404;
-        throw error;
-      }
-      channel.name = name;
-      channel.desc = desc;
-      return channel.save();
-    })
-    .then((result) => {
-      res.status(200).json({ message: "Channel updated", channel: result });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
+  const entryCode = req.body.entryCode;
+  // TODO : reconsider entry code is not changeable
+  // TODO: check entry code is used / not, possibly using new route and function if above decided
+  try {
+    const channel = await Channel.findById(channelId);
+    if (!channel) {
+      const error = new Error("Channel not found");
+      error.statusCode = 404;
+      next(error);
+    }
+    channel.name = name;
+    channel.desc = desc;
+    channel.entry_code = entryCode;
+    await channel.save();
+    res.status(200).json({ message: "Channel updated", channel: channel });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 exports.deleteChannel = (req, res, next) => {
@@ -155,4 +145,76 @@ exports.deleteChannel = (req, res, next) => {
       }
       next(err);
     });
+};
+
+exports.setChannelPhoto = async (req, res, next) => {
+  const { channelId } = req.params;
+  try {
+    const channel = await Channel.findById(channelId);
+    if (!channel) {
+      const error = new Error("Channel not found");
+      error.statusCode = 404;
+      next(error);
+    }
+    if (channel.photo) {
+      //delete existing photo in s3 bucket
+      const photoKey = convertUrlToKey(channel.photo);
+      await s3Helpers.deleteObject(photoKey);
+    }
+    channel.photo = req.file.location;
+    await channel.save();
+    res.status(201).json({
+      message: "Photo added",
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.deleteChannelPhoto = async (req, res, next) => {
+  const { channelId } = req.params;
+  try {
+    const channel = await Channel.findById(channelId);
+    if (!channel) {
+      const error = new Error("Channel not found");
+      error.statusCode = 404;
+      next(error);
+    }
+    const photoKey = convertUrlToKey(channel.photo);
+    await s3Helpers.deleteObject(photoKey);
+    channel.photo = null;
+    await channel.save();
+    res.status(201).json({
+      message: "Photo deleted",
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.changeSetting = async (req, res, next) => {
+  const { channelId } = req.params;
+  const { postApproval, entryThroughCode } = req.body;
+  try {
+    const channel = await Channel.findById(channelId);
+    channel.setting = {
+      post_approval: postApproval,
+      entry_through_code: entryThroughCode,
+    };
+    await channel.save();
+    res
+      .status(200)
+      .json({ message: "setting updated", setting: channel.setting });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };

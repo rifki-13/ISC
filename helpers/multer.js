@@ -12,59 +12,38 @@ const imageWL = [
   "image/*",
 ];
 
+function storeFile(folderPrefix) {
+  return multer({
+    storage: multerS3({
+      s3: s3,
+      bucket: config.get("s3.bucket"),
+      acl: "public-read",
+      metadata: function (req, file, cb) {
+        cb(null, { fieldName: file.fieldname });
+      },
+      key: function (req, file, cb) {
+        cb(
+          null,
+          folderPrefix + Date.now().toString() + "-" + file.originalname
+        );
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (file.fieldname === "images") {
+        if (!imageWL.includes(file.mimetype)) {
+          return cb(new Error("image file only"), false);
+        }
+        cb(null, true);
+      } else {
+        cb(null, true);
+      }
+    },
+  });
+}
 // const videoWL = ["video/x-msvideo", "video/mp4", "video/mpeg", "video/webm"];
 
-exports.uploadPostAttachment = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: config.get("s3.bucket"),
-    acl: "public-read",
-    metadata: function (req, file, cb) {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-      cb(
-        null,
-        "attachments/" + Date.now().toString() + "-" + file.originalname
-      );
-    },
-  }),
-  fileFilter: (req, file, cb) => {
-    if (file.fieldname === "images") {
-      if (!imageWL.includes(file.mimetype)) {
-        return cb(new Error("image file only"), false);
-      }
-      cb(null, true);
-      // } else if (file.fieldname === "videos") {
-      //   if (!videoWL.includes(file.mimetype)) {
-      //     return cb(new Error("video file only"), false);
-      //   }
-      //   cb(null, true);
-    } else {
-      cb(null, true);
-    }
-  },
-});
+exports.uploadPostAttachment = storeFile("attachments/");
 
-exports.uploadUserPhoto = multer({
-  storage: multerS3({
-    s3: s3,
-    bucket: config.get("s3.bucket"),
-    acl: "public-read",
-    metadata: function (req, file, cb) {
-      cb(null, { fieldName: file.fieldname });
-    },
-    key: function (req, file, cb) {
-      cb(
-        null,
-        "user_photos/" + Date.now().toString() + "-" + file.originalname
-      );
-    },
-  }),
-  fileFilter: (req, file, cb) => {
-    if (!imageWL.includes(file.mimetype)) {
-      return cb(new Error("image file only"), false);
-    }
-    cb(null, true);
-  },
-});
+exports.uploadUserPhoto = storeFile("user_photos/");
+
+exports.uploadChannelPhoto = storeFile("channel_photos/");
