@@ -69,6 +69,20 @@ const channelSchema = new Schema(
       type: channelSettingSchema,
       required: true,
     },
+    pending_posts: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Post",
+        required: false,
+      },
+    ],
+    pending_entry: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        required: false,
+      },
+    ],
   },
   { timestamps: true }
 );

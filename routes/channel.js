@@ -42,4 +42,8 @@ router
   .route("/:channelId/setting")
   .put([isAuth, isAdmin], channelController.changeSetting);
 
+router
+  .route("/:channelId/pending-post/:postId/:response")
+  .post(channelController.responsePendingPost);
+
 module.exports = router;

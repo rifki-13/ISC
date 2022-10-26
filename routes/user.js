@@ -24,10 +24,22 @@ router
     userController.addUser
   ); //create user
 
-router.get("/:userId", userController.getUser);
+router
+  .route("/:userId")
+  .get(userController.getUser)
+  .delete(userController.deleteUser); //DELETE /user/:userId
+
+//route to save expo push token
+router
+  .route("/:userId/expo-token")
+  .post(isAuth, userController.saveExpoToken)
+  .delete(isAuth, userController.deleteExpoToken);
+
+//route get post based on userid || GET /posts/user
+router.route("/:userId/posts").get(isAuth, userController.getOwnPost);
 
 //TODO get user data without sensitif data
-router.get("/user-data/:userId", userController.getUserData);
+// router.get("/user-data/:userId", userController.getUserData);
 
 //POST /user/ || create user
 
@@ -37,35 +49,22 @@ router.post("/channel/:entryCode", isAuth, userController.enterChannel);
 //POST /users/channel/:channelId/quit
 router.delete("/channel/:channelId/quit", isAuth, userController.quitChannel);
 
-//POST /user/change-photo
-router.post(
-  "/photo",
-  [isAuth, express().use(upload.single("photo"))],
-  userController.changePhoto
-);
+router
+  .route("/photo")
+  .post(
+    [isAuth, express().use(upload.single("photo"))],
+    userController.changePhoto
+  ) //POST /user/change-photo
+  .delete(isAuth, userController.removePhoto); //POST /user/photo/remove
 
-//POST /user/photo/remove
-router.delete("/photo", isAuth, userController.removePhoto);
+router
+  .route("/posts/:postId/save")
+  .post(isAuth, userController.savePost) //route save post ke user || POST /users/posts/:postId/save
+  .delete(isAuth, userController.removeSavedPost); //DELETE /users/:postId/remove-save || // Menghapus saved post dari user
 
-//DELETE /user/:userId
-router.delete("/:userId", userController.deleteUser);
-
-//route save post ke user || POST /users/posts/:postId/save
-router.post("/posts/:postId/save", isAuth, userController.savePost);
-
-//DELETE /users/:postId/remove-save || Menghapus saved post dari user
-router.delete("/posts/:postId/save", isAuth, userController.removeSavedPost);
-
-//POST /users/posts/:postId/archive || Archive post
-router.post("/posts/:postId/archive", isAuth, userController.archivePost);
-
-//DELETE /users/posts/:postId/archive || Unarchive active post
-router.delete("/posts/:postId/archive", isAuth, userController.unarchivePost);
-
-//route get post based on userid || GET /posts/user
-router.route("/:userId/posts").get(isAuth, userController.getOwnPost);
-
-//route to save expo push token
-router.post("/expo-token", isAuth, userController.saveExpoToken);
+router
+  .route("/posts/:postId/archive")
+  .post(isAuth, userController.archivePost) //POST /users/posts/:postId/archive || Archive post
+  .delete(isAuth, userController.unarchivePost); //DELETE /users/posts/:postId/archive || Unarchive active post
 
 module.exports = router;

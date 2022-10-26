@@ -460,3 +460,18 @@ exports.saveExpoToken = (req, res, next) => {
       next(err);
     });
 };
+
+exports.deleteExpoToken = async (req, res, next) => {
+  const userId = req.userId;
+  try {
+    const user = await User.findById(userId);
+    user.expo_push_token = "";
+    await user.save();
+    res.status(200).json({ message: "expo push token deleted" });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};

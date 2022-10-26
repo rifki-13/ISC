@@ -1,6 +1,7 @@
 const { validationResult } = require("express-validator");
 
 const Channel = require("../models/channel");
+const Post = require("../models/post");
 
 //helper
 const isJsonParsable = require("../helpers/is-json-parsable");
@@ -211,6 +212,38 @@ exports.changeSetting = async (req, res, next) => {
     res
       .status(200)
       .json({ message: "setting updated", setting: channel.setting });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.responsePendingPost = async (req, res, next) => {
+  const { channelId, postId, response } = req.params;
+  try {
+    const channel = await Channel.findById(channelId).populate("pending_posts");
+    const pendingPost = channel.pending_posts.find(
+      (el) => el._id.toString() === postId
+    );
+    if (!pendingPost) {
+      const error = new Error("Pending post not found");
+      error.statusCode = 404;
+      next(error);
+    }
+    let message = "";
+    if (response === "approve") {
+      const post = await Post.findById(postId);
+      post.channel.push(channelId);
+      await post.save();
+      message = "post approved";
+    } else if (response === "decline") {
+      message = "post declined";
+    }
+    channel.pending_posts.pull(postId);
+    await channel.save();
+    res.status(200).json({ message: message });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

@@ -1,11 +1,13 @@
 const { validationResult } = require("express-validator");
 
+//model
 const Post = require("../models/post");
 const User = require("../models/user");
+const Channel = require("../models/channel");
 const ReportedPost = require("../models/reported_post");
+//helper
 const s3Helpers = require("../helpers/s3");
-const { Expo } = require("expo-server-sdk");
-const axios = require("axios");
+const sendPushNotification = require("../helpers/send-notification");
 
 //get all post || GET /post/
 exports.getPosts = (req, res, next) => {
@@ -22,7 +24,7 @@ exports.getPosts = (req, res, next) => {
 };
 
 //create a post || POST /post/
-exports.addPost = (req, res, next) => {
+exports.addPost = async (req, res, next) => {
   //error handling
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -31,21 +33,15 @@ exports.addPost = (req, res, next) => {
     throw error;
   }
   //model construct
-  const title = req.body.title;
+  const { readOnly, sendNotification, title, kategori } = req.body;
   const author = req.userId;
   const channel = JSON.parse(req.body.channel);
-  const kategori = req.body.kategori;
   let validDate = null;
   if (req.body.validDate) {
     validDate = new Date(req.body.validDate);
   }
-  const readOnly = req.body.readOnly;
-  const sendNotif = req.body.sendNotification;
-  let creator;
-  let createdPost;
-  let images = [];
-  // let videos = [];
-  let attachments = [];
+  let images = [],
+    attachments = [];
   if (req.files) {
     if (req.files.images) {
       req.files.images.forEach((element) => {
@@ -63,79 +59,69 @@ exports.addPost = (req, res, next) => {
     images: images,
     attachments: attachments,
   };
-  //validate if this user belong to channel that post directed to
-  User.findById(author)
-    .then((user) => {
-      if (!channel.some((c) => user.assigned_channel.includes(c))) {
-        const error = new Error(
-          "This user does cant create post in this channel"
-        );
-        error.statusCode = 403;
-        throw error;
+  try {
+    let user = await User.findById(author);
+    if (!channel.some((c) => user.assigned_channel.includes(c))) {
+      const error = new Error(
+        "This user does cant create post in this channel"
+      );
+      error.statusCode = 403;
+      next(error);
+    }
+    let channelId = [];
+    let approvalRequiredChannel = [];
+    const channels = await Channel.find({ _id: channel });
+    //filtering channel
+    for (const chan of channels) {
+      if (!chan.setting?.post_approval) {
+        channelId.push(chan._id);
+      } else {
+        approvalRequiredChannel.push(chan);
       }
-      creator = user;
-      //create post
-      let postObj = {
-        title: title,
-        author: author,
-        channel: channel,
-        read_only: readOnly,
-        kategori: kategori,
-        content: content,
-      };
-      if (validDate) {
-        postObj = { ...postObj, validity_date: validDate };
+    }
+    //create post
+    let postObj = {
+      title: title,
+      author: author,
+      channel: channelId,
+      read_only: readOnly,
+      kategori: kategori,
+      content: content,
+    };
+    if (validDate) {
+      postObj = { ...postObj, validity_date: validDate };
+    }
+    const post = await Post.create({ ...postObj });
+    user.posts.push(post);
+    user = await user.save();
+    //sent post to pending post in channel
+    for (let apprChannel of approvalRequiredChannel) {
+      apprChannel.pending_posts.push(post);
+      apprChannel.save();
+    }
+    //Send Notification
+    if (sendNotification === "true") {
+      let expoTokens = [];
+      const users = await User.find()
+        .where("assigned_channel")
+        .in([...channelId]);
+      for (let u of users) {
+        if (u._id.toString() !== user._id.toString()) {
+          expoTokens.push(u.expo_push_token);
+        }
       }
-      const post = new Post({ ...postObj });
-      //save post
-      return post.save();
-    })
-    .then((post) => {
-      createdPost = post;
-      creator.posts.push(post);
-      return creator.save();
-    })
-    .then((creator) => {
-      if (sendNotif === "true") {
-        //send notification
-        let expoTokens = [];
-        User.find().then((res) => {
-          res.forEach((el) => {
-            if (
-              Expo.isExpoPushToken(el.expo_push_token) &&
-              creator.expo_push_token !== el.expo_push_token
-            ) {
-              expoTokens.push(el.expo_push_token);
-            }
-          });
-          axios({
-            url: "https://exp.host/--/api/v2/push/send",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            method: "post",
-            data: {
-              to: expoTokens,
-              title: createdPost.title,
-              body: createdPost.content.text,
-            },
-          }).then((res) => {
-            console.log(res.data);
-          });
-        });
-      }
-      res.status(201).json({
-        message: "Post Created",
-        post: createdPost,
-        creator: creator,
-      });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
+      await sendPushNotification(expoTokens, post.title, post.content.text);
+    }
+    res.status(201).json({
+      message: "post created",
+      post: post,
     });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 //get a post || GET /post/:postId
