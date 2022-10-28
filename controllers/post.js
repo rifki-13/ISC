@@ -8,6 +8,7 @@ const ReportedPost = require("../models/reported_post");
 //helper
 const s3Helpers = require("../helpers/s3");
 const sendPushNotification = require("../helpers/send-notification");
+const isJsonParsable = require("../helpers/is-json-parsable");
 
 //get all post || GET /post/
 exports.getPosts = (req, res, next) => {
@@ -110,6 +111,9 @@ exports.addPost = async (req, res, next) => {
           expoTokens.push(u.expo_push_token);
         }
       }
+      if (expoTokens.length === 0) {
+        return 0;
+      }
       await sendPushNotification(expoTokens, post.title, post.content.text);
     }
     res.status(201).json({
@@ -125,32 +129,37 @@ exports.addPost = async (req, res, next) => {
 };
 
 //get a post || GET /post/:postId
-exports.getPost = (req, res, next) => {
+exports.getPost = async (req, res, next) => {
+  let query;
   const postId = req.params.postId;
-  Post.findById(postId)
-    .populate("channel")
-    .populate("author")
-    .populate([
-      {
-        path: "comments",
-        populate: "author",
-      },
-      { path: "comments.replies", populate: "author" },
-    ])
-    .then((post) => {
-      if (!post) {
-        const error = new Error("Post not found");
-        error.statusCode = 404;
-        throw error;
-      }
-      res.status(200).json({ message: "Post Found", post: post });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
+  try {
+    if (isJsonParsable(postId)) {
+      query = Post.find({ _id: JSON.parse(postId) });
+    } else {
+      query = Post.findById(postId);
+    }
+    const post = await query
+      .populate("channel")
+      .populate("author")
+      .populate([
+        {
+          path: "comments",
+          populate: "author",
+        },
+        { path: "comments.replies", populate: "author" },
+      ]);
+    if (!post) {
+      const error = new Error("Post not found");
+      error.statusCode = 404;
+      next(error);
+    }
+    res.status(200).json({ message: "Post Found", post: post });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 //edit a post || PUT /post/:postId

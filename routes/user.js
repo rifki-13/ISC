@@ -24,10 +24,20 @@ router
     userController.addUser
   ); //create user
 
+router.route("/:userId/profile").put(isAuth, userController.updateProfile);
+
 router
   .route("/:userId")
   .get(userController.getUser)
   .delete(userController.deleteUser); //DELETE /user/:userId
+
+router
+  .route("/:userId/photo")
+  .post(
+    [isAuth, express().use(upload.single("photo"))],
+    userController.changePhoto
+  ) //POST /user/change-photo
+  .delete(isAuth, userController.removePhoto); //POST /user/photo/remove
 
 //route to save expo push token
 router
@@ -48,14 +58,6 @@ router.post("/channel/:entryCode", isAuth, userController.enterChannel);
 
 //POST /users/channel/:channelId/quit
 router.delete("/channel/:channelId/quit", isAuth, userController.quitChannel);
-
-router
-  .route("/photo")
-  .post(
-    [isAuth, express().use(upload.single("photo"))],
-    userController.changePhoto
-  ) //POST /user/change-photo
-  .delete(isAuth, userController.removePhoto); //POST /user/photo/remove
 
 router
   .route("/posts/:postId/save")

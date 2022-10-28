@@ -229,7 +229,7 @@ exports.removePhoto = (req, res, next) => {
       return s3Helpers.deleteObject(photoKey);
     })
     .then(() => {
-      res.status(201).json({
+      res.status(200).json({
         message: "Photo removed",
         key: photoKey,
       });
@@ -468,6 +468,35 @@ exports.deleteExpoToken = async (req, res, next) => {
     user.expo_push_token = "";
     await user.save();
     res.status(200).json({ message: "expo push token deleted" });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.updateProfile = async (req, res, next) => {
+  const { userId } = req.params;
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      const error = new Error("Validation Failed");
+      error.statusCode = 422;
+      next(error);
+    }
+    let data = {
+      name: req.body.name,
+      jurusan: req.body.jurusan,
+      prodi: req.body.prodi,
+    };
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(req.body.password, salt);
+      data = { ...data, password: hashedPassword };
+    }
+    await User.findByIdAndUpdate(userId, data);
+    res.status(200).json({ message: "Profile updated" });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

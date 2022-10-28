@@ -81,7 +81,7 @@ const postSchema = new Schema(
       {
         type: Schema.Types.ObjectId,
         ref: "Channel",
-        required: true,
+        required: false,
       },
     ],
     read_only: {

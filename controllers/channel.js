@@ -188,7 +188,7 @@ exports.deleteChannelPhoto = async (req, res, next) => {
     await s3Helpers.deleteObject(photoKey);
     channel.photo = null;
     await channel.save();
-    res.status(201).json({
+    res.status(200).json({
       message: "Photo deleted",
     });
   } catch (err) {
@@ -244,6 +244,45 @@ exports.responsePendingPost = async (req, res, next) => {
     channel.pending_posts.pull(postId);
     await channel.save();
     res.status(200).json({ message: message });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.getPendingPost = async (req, res, next) => {
+  let channelId, query;
+  if (isJsonParsable(req.params.channelId)) {
+    channelId = JSON.parse(req.params.channelId);
+    query = Channel.find({ _id: channelId });
+  } else {
+    query = Channel.findById(req.params.channelId);
+  }
+  try {
+    const channel = await query.populate({
+      path: "pending_posts",
+      populate: { path: "author", select: "_id, name" },
+    });
+    let pendingPosts;
+    if (channel.length) {
+      for (const channelElement of channel) {
+        let data = {
+          channel: { _id: channelElement._id, name: channelElement.name },
+          posts: [...channelElement.pending_posts],
+        };
+        pendingPosts =
+          typeof pendingPosts === "undefined"
+            ? [data]
+            : pendingPosts.push(data);
+      }
+    } else {
+      pendingPosts = channel.pending_posts;
+    }
+    res
+      .status(200)
+      .json({ message: "pending post fetched", pendingPosts: pendingPosts });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
