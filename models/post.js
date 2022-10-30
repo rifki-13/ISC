@@ -101,7 +101,13 @@ const postSchema = new Schema(
     kategori: {
       type: String,
       enum: {
-        values: ["Surat Edaran", "Event", "Notice", "Lost and Found"],
+        values: [
+          "Surat Edaran",
+          "Event",
+          "Notice",
+          "Lost and Found",
+          "Promotion",
+        ],
         message: "{VALUE} is not supported",
       },
       required: true,

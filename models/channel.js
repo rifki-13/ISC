@@ -67,6 +67,10 @@ const channelSchema = new Schema(
     },
     setting: {
       type: channelSettingSchema,
+      default: {
+        post_approval: false,
+        entry_through_code: true,
+      },
       required: true,
     },
     pending_posts: [

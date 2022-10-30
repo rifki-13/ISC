@@ -7,7 +7,7 @@ const express = require("express");
 
 module.exports = express().use(
   upload.fields([
-    { name: "images", maxCount: 10 },
+    { name: "images", maxCount: 30 },
     {
       name: "attachments",
       maxCount: 10,

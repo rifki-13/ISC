@@ -18,6 +18,7 @@ router
 router
   .route("/:postId")
   .get(isAuth, postController.getPost) //route get 1 post
+  //  TODO : change update post
   .put([isAuth, uploadPostAttachmentMiddleware], postController.updatePost) //route update post
   .delete(isAuth, postController.deletePost); //route delete post
 

@@ -163,22 +163,19 @@ exports.getPost = async (req, res, next) => {
 };
 
 //edit a post || PUT /post/:postId
-exports.updatePost = (req, res, next) => {
+exports.updatePost = async (req, res, next) => {
   const postId = req.params.postId;
   //error validation handling
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const error = new Error("Validation Failed");
     error.statusCode = 422;
-    throw error;
+    next(error);
   }
   //extract body request
-  const title = req.body.title;
-  const channel = req.body.channelId;
-  const kategori = req.body.kategori;
+  const { title, text, channel, kategori, readOnly } = req.body;
   //push attachment location ke array
   let images = [];
-  // let videos = [];
   let attachments = [];
   if (req.files) {
     if (req.files.images) {
@@ -186,72 +183,81 @@ exports.updatePost = (req, res, next) => {
         images.push(element.location);
       });
     }
-    // if (req.files.videos) {
-    //   req.files.videos.forEach((element) => {
-    //     videos.push(element.location);
-    //   });
-    // }
     if (req.files.attachments) {
       req.files.attachments.forEach((element) => {
         attachments.push(element.location);
       });
     }
   }
-  //object content
-  const content = {
-    text: req.body.text,
-    images: images,
-    // videos: videos,
-    attachments: attachments,
-  };
-  Post.findById(postId)
-    .then((post) => {
-      //not found error
-      if (!post) {
-        const error = new Error("Post not found");
-        error.statusCode = 404;
-        throw error;
+  try {
+    const post = await Post.findById(postId);
+    let channelId = [];
+    let approvalRequiredChannel = [];
+    const channels = await Channel.find({ _id: JSON.parse(channel) });
+    //filtering channel
+    for (const chan of channels) {
+      if (!chan.setting?.post_approval || post.channel.includes(chan._id)) {
+        channelId.push(chan._id);
+      } else {
+        approvalRequiredChannel.push(chan);
       }
-      //validating user
-      if (post.author.toString() !== req.userId) {
-        const error = new Error("Not Authorized");
-        error.statusCode = 403;
-        throw error;
+    }
+    if (approvalRequiredChannel.length > 0) {
+      for (let apprChannel of approvalRequiredChannel) {
+        apprChannel.pending_posts.push(post);
+        apprChannel.save();
       }
-      //extract array
+    }
+    //delete images if on request images not sent
+    if (req.body.deleteImages && post.content.images !== 0) {
       const images = post.content.images;
-      // const videos = post.content.videos;
-      const attachments = post.content.attachments;
       let keys = [];
       //delete images
       if (images.length > 0) {
         keys = s3Helpers.extractKeys(images, keys);
       }
-      //delete videos
-      // if (videos.length > 0) {
-      //   keys = s3Helpers.extractKeys(videos, keys);
-      // }
-      //delete attachment
-      if (attachments.length > 0) {
-        keys = s3Helpers.extractKeys(attachments, keys);
-      }
-      s3Helpers.deleteObjects(keys);
-      post.title = title;
-      post.channel = channel;
-      post.kategori = kategori;
-      post.content = content;
-      return post.save();
-    })
-    //send result
-    .then((result) => {
-      res.status(200).json({ message: "Post Updated", post: result });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
+      await s3Helpers.deleteObjects(keys);
+    }
+    if (post.content.attachments.length > 0) {
+      const attachments = post.content.attachments;
+      let keys = [];
+      keys = s3Helpers.extractKeys(attachments, keys);
+      await s3Helpers.deleteObjects(keys);
+    }
+    post.channel = channelId;
+    post.title = title;
+    post.kategori = kategori;
+    if (req.body.validDate) {
+      post.validity_date = new Date(req.body.validDate);
+    } else {
+      post.validity_date = undefined;
+    }
+    post.read_only = readOnly;
+    post.content = {
+      text: text,
+      images: images,
+    };
+    if (images.length > 0) {
+      post.content = {
+        ...post.content,
+        images: images,
+      };
+    }
+    if (attachments.length > 0) {
+      post.content = {
+        ...post.content,
+        attachments: attachments,
+      };
+    }
+
+    await post.save();
+    res.status(200).json({ message: "Post Updated", post: post });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 //delete a post || DELETE /post/:postId
