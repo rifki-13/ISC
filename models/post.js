@@ -84,6 +84,13 @@ const postSchema = new Schema(
         required: false,
       },
     ],
+    pending_channels: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Channel",
+        required: false,
+      },
+    ],
     read_only: {
       type: Boolean,
       required: false,

@@ -74,7 +74,7 @@ exports.addPost = async (req, res, next) => {
     const channels = await Channel.find({ _id: channel });
     //filtering channel
     for (const chan of channels) {
-      if (!chan.setting?.post_approval) {
+      if (!chan.setting?.post_approval || chan.admin.includes(author)) {
         channelId.push(chan._id);
       } else {
         approvalRequiredChannel.push(chan);
@@ -97,9 +97,11 @@ exports.addPost = async (req, res, next) => {
     user = await user.save();
     //sent post to pending post in channel
     for (let apprChannel of approvalRequiredChannel) {
+      post.pending_channels.push(apprChannel._id);
       apprChannel.pending_posts.push(post);
       apprChannel.save();
     }
+    await post.save();
     //Send Notification
     if (sendNotification === "true") {
       let expoTokens = [];
@@ -164,6 +166,7 @@ exports.getPost = async (req, res, next) => {
 
 //edit a post || PUT /post/:postId
 exports.updatePost = async (req, res, next) => {
+  const userId = req.userId;
   const postId = req.params.postId;
   //error validation handling
   const errors = validationResult(req);
@@ -196,7 +199,11 @@ exports.updatePost = async (req, res, next) => {
     const channels = await Channel.find({ _id: JSON.parse(channel) });
     //filtering channel
     for (const chan of channels) {
-      if (!chan.setting?.post_approval || post.channel.includes(chan._id)) {
+      if (
+        !chan.setting?.post_approval ||
+        post.channel.includes(chan._id) ||
+        chan.admin.includes(userId)
+      ) {
         channelId.push(chan._id);
       } else {
         approvalRequiredChannel.push(chan);
@@ -209,7 +216,7 @@ exports.updatePost = async (req, res, next) => {
       }
     }
     //delete images if on request images not sent
-    if (req.body.deleteImages && post.content.images !== 0) {
+    if (req.body.deleteImages && post.content.images.length !== 0) {
       const images = post.content.images;
       let keys = [];
       //delete images
@@ -249,7 +256,6 @@ exports.updatePost = async (req, res, next) => {
         attachments: attachments,
       };
     }
-
     await post.save();
     res.status(200).json({ message: "Post Updated", post: post });
   } catch (err) {
@@ -389,7 +395,6 @@ exports.postComment = (req, res, next) => {
   //extracting request
   const userId = req.userId;
   const content = req.body.content;
-  const date = new Date();
   Post.findById(postId)
     .then((post) => {
       if (!post) {
@@ -400,7 +405,6 @@ exports.postComment = (req, res, next) => {
       post.comments.push({
         author: userId,
         content: content,
-        date: date,
       });
       return post.save();
     })
@@ -444,8 +448,7 @@ exports.editComment = (req, res, next) => {
         error.statusCode = 403;
         throw error;
       }
-      comment.content = req.body.comment;
-      comment.date = new Date();
+      comment.content = req.body.content;
       return post.save();
     })
     .then((result) => {

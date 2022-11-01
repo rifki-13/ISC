@@ -46,6 +46,8 @@ router
   .route("/:channelId/pending-posts/:postId/:response")
   .post([isAuth, isAdmin], channelController.responsePendingPost);
 
-router.route("/:channelId/pending-posts").get(channelController.getPendingPost); //accept 1 channel or array of channel
+router
+  .route("/:channelId/pending-posts")
+  .get([isAuth, isAdmin], channelController.getPendingPost); //accept 1 channel or array of channel
 // [isAuth, isAdmin],
 module.exports = router;

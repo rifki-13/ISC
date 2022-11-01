@@ -236,6 +236,7 @@ exports.responsePendingPost = async (req, res, next) => {
     if (response === "approve") {
       const post = await Post.findById(postId);
       post.channel.push(channelId);
+      post.pending_channels.pull(channelId);
       await post.save();
       message = "post approved";
     } else if (response === "decline") {

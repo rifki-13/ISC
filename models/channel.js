@@ -87,6 +87,15 @@ const channelSchema = new Schema(
         required: false,
       },
     ],
+    status: {
+      type: String,
+      enum: {
+        values: ["active", "suspended"],
+        message: "{VALUE} is not supported",
+      },
+      default: "active",
+      required: true,
+    },
   },
   { timestamps: true }
 );
