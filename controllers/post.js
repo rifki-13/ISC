@@ -143,6 +143,7 @@ exports.getPost = async (req, res, next) => {
     const post = await query
       .populate("channel")
       .populate("author")
+      .populate("pending_channels")
       .populate([
         {
           path: "comments",

@@ -112,45 +112,47 @@ exports.addUser = (req, res, next) => {
 };
 
 //assign user to channel through entry code
-exports.enterChannel = (req, res, next) => {
+exports.enterChannel = async (req, res, next) => {
   //extracting request
-  const entry_code = req.params.entryCode;
-  let channelEntered;
+  const entryCode = req.params.entryCode;
   const userId = req.userId;
-  Channel.findOne({ entry_code: entry_code })
-    .then((channel) => {
-      //wrong entry code
-      if (!channel) {
-        const error = new Error("Wrong entry code");
-        error.statusCode = 404;
-        throw error;
-      }
-      channelEntered = channel;
-      return User.findById(userId);
-    })
-    .then((user) => {
-      if (user.assigned_channel.includes(channelEntered._id)) {
-        const error = new Error("User has already in this channel");
-        error.statusCode = 400;
-        throw error;
-      }
-      user.assigned_channel.push(channelEntered._id);
-      channelEntered.member.push(user._id);
-      channelEntered.save();
-      return user.save();
-    })
-    .then((user) => {
-      res.status(201).json({
-        message: user.name + " entered channel successfully",
-        user: user,
-      });
-    })
-    .catch((err) => {
-      if (!err.statusCode) {
-        err.statusCode = 500;
-      }
-      next(err);
-    });
+  try {
+    const channel = await Channel.findOne({ entry_code: entryCode });
+    if (!channel) {
+      const error = new Error("Wrong entry code");
+      error.statusCode = 404;
+      next(error);
+    }
+    const user = await User.findById(userId);
+    if (user.assigned_channel.includes(channel._id)) {
+      const error = new Error("User has already in this channel");
+      error.statusCode = 400;
+      next(error);
+    }
+    if (channel.setting.entry_through_code) {
+      user.assigned_channel.push(channel);
+      await user.save();
+      channel.member.push(user);
+      await channel.save();
+      res
+        .status(200)
+        .json({ status: "success", message: "Entered channel successfully" });
+    } else {
+      channel.pending_entry.push(user);
+      await channel.save();
+      res
+        .status(200)
+        .json({
+          status: "pending",
+          message: "Entry pending, wait to be accepted by channel admin",
+        });
+    }
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
 };
 
 exports.quitChannel = (req, res, next) => {

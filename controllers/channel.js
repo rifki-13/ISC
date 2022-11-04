@@ -35,7 +35,8 @@ exports.getChannelsData = async (req, res, next) => {
   try {
     const channel = await query
       .populate("member", "_id name photo")
-      .populate("admin", "_id name photo");
+      .populate("admin", "_id name photo")
+      .populate("pending_entry", "_id name photo");
     if (!channel) {
       const error = new Error("Channels not founds");
       error.statusCode = 404;
@@ -232,17 +233,17 @@ exports.responsePendingPost = async (req, res, next) => {
       error.statusCode = 404;
       next(error);
     }
+    const post = await Post.findById(postId);
     let message = "";
     if (response === "approve") {
-      const post = await Post.findById(postId);
       post.channel.push(channelId);
-      post.pending_channels.pull(channelId);
-      await post.save();
       message = "post approved";
     } else if (response === "decline") {
       message = "post declined";
     }
+    post.pending_channels.pull(channelId);
     channel.pending_posts.pull(postId);
+    await post.save();
     await channel.save();
     res.status(200).json({ message: message });
   } catch (err) {
@@ -266,17 +267,17 @@ exports.getPendingPost = async (req, res, next) => {
       path: "pending_posts",
       populate: { path: "author", select: "_id, name" },
     });
-    let pendingPosts;
+    let pendingPosts = [];
     if (channel.length) {
       for (const channelElement of channel) {
+        if (channelElement.pending_posts.length === 0) {
+          continue;
+        }
         let data = {
           channel: { _id: channelElement._id, name: channelElement.name },
           posts: [...channelElement.pending_posts],
         };
-        pendingPosts =
-          typeof pendingPosts === "undefined"
-            ? [data]
-            : pendingPosts.push(data);
+        pendingPosts.push(data);
       }
     } else {
       pendingPosts = channel.pending_posts;

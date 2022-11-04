@@ -26,9 +26,17 @@ router.delete(
   adminController.kickUser
 );
 
+//TODO: move route only admin can access to admin route
+//response either accept / reject
+router.put(
+  "/channels/:channelId/users/:userId/:response",
+  [isAuth, isAdmin],
+  adminController.responsePendingEntry
+);
+
 router.put("channels/:channelId", isAuth, isAdmin);
 
-router.put("hierarchy/set", isAuth);
+// router.put("hierarchy/set", isAuth);
 
 //admin delete user posts / pull this channel id from posts, so post not visible in this channel
 router.delete("/channels/:channelId/posts/:postId", isAuth, isAdmin, () => {});

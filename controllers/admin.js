@@ -82,4 +82,26 @@ exports.kickUser = (req, res, next) => {
     });
 };
 
-// exports.
+exports.responsePendingEntry = async (req, res, next) => {
+  const { channelId, userId, response } = req.params;
+  try {
+    const channel = await Channel.findById(channelId);
+    const user = await User.findById(userId);
+    if (response === "accept") {
+      user.assigned_channel.push(channel);
+      channel.member.push(user);
+      await user.save();
+    }
+    channel.pending_entry.pull(user);
+    await channel.save();
+    res.status(200).json({
+      status: response,
+      message: `Entry ${response === "accept" ? "accepted" : "rejected"}`,
+    });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
