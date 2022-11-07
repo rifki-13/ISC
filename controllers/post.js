@@ -110,13 +110,18 @@ exports.addPost = async (req, res, next) => {
         .in([...channelId]);
       for (let u of users) {
         if (u._id.toString() !== user._id.toString()) {
-          expoTokens.push(u.expo_push_token);
+          if (u.expo_push_token) {
+            expoTokens.push(u.expo_push_token);
+          }
         }
       }
       if (expoTokens.length === 0) {
         return 0;
       }
-      await sendPushNotification(expoTokens, post.title, post.content.text);
+      await sendPushNotification(expoTokens, post.title, post.content.text, {
+        type: "post",
+        postId: post._id,
+      });
     }
     res.status(201).json({
       message: "post created",

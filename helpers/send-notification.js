@@ -1,5 +1,5 @@
 const axios = require("axios");
-//TODO add data to axios
+//TODO : use expo server sdk to send notification
 module.exports = async (expoPushTokens, title, body, data = null) => {
   return axios({
     url: "https://exp.host/--/api/v2/push/send",
@@ -11,6 +11,7 @@ module.exports = async (expoPushTokens, title, body, data = null) => {
       to: expoPushTokens,
       title: title,
       body: body,
+      data: data,
     },
   });
 };
