@@ -48,6 +48,13 @@ const channelSchema = new Schema(
       ref: "Channel",
       required: false,
     },
+    child_channel: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Channel",
+        required: false,
+      },
+    ],
     kodeProdi: [
       {
         type: String,

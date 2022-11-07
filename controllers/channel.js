@@ -2,11 +2,14 @@ const { validationResult } = require("express-validator");
 
 const Channel = require("../models/channel");
 const Post = require("../models/post");
+const User = require("../models/user");
+const RequestChannel = require("../models/channel-request");
 
 //helper
 const isJsonParsable = require("../helpers/is-json-parsable");
 const convertUrlToKey = require("../helpers/url-to-aws-key");
 const s3Helpers = require("../helpers/s3");
+const sendPushNotification = require("../helpers/send-notification");
 
 //return all list channel || GET /channel/
 exports.getChannels = (req, res, next) => {
@@ -285,6 +288,93 @@ exports.getPendingPost = async (req, res, next) => {
     res
       .status(200)
       .json({ message: "pending post fetched", pendingPosts: pendingPosts });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.requestChannel = async (req, res, next) => {
+  const userId = req.userId;
+  const { channelId } = req.params;
+  const { channelName, desc, purpose } = req.body;
+  try {
+    const requestChannel = await RequestChannel.create({
+      requester: userId,
+      requested_to: channelId,
+      channel_name: channelName,
+      description: desc,
+      purpose: purpose,
+    });
+    res
+      .status(201)
+      .json({ message: "Channel Requested", requestChannel: requestChannel });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.getRequestedChannel = async (req, res, next) => {
+  const { channelId } = req.params;
+  try {
+    const requestedChannel = await RequestChannel.find({
+      requested_to: channelId,
+    });
+    res
+      .status(200)
+      .json({ message: "data fetched", requestedChannel: requestedChannel });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.responseRequestedChannel = async (req, res, next) => {
+  const { channelId, requestId, response } = req.params;
+  try {
+    const admin = await User.findById(req.userId);
+    const requestedChannel = await RequestChannel.findById(requestId);
+    if (response === "decline") {
+      const { reason } = req.body;
+      const user = await User.findById(requestedChannel.requester);
+      await requestedChannel.remove();
+      if (user.expo_push_token) {
+        await sendPushNotification(
+          user.expo_push_token,
+          "Request Channel",
+          `Alasan: ${reason}`
+        );
+      }
+      res.status(200).json({
+        message: `Request Declined by ${admin.name}`,
+        reason: reason,
+        by: admin.name,
+      });
+    } else {
+      const newChannel = await Channel.create({
+        name: requestedChannel.channel_name,
+        desc: requestedChannel.description,
+        parent_channel: channelId,
+      });
+      newChannel.admin.push(requestedChannel.requester);
+      newChannel.member.push(requestedChannel.requester);
+      await newChannel.save();
+      const channel = await Channel.findById(channelId);
+      channel.child_channel.push(newChannel);
+      await channel.save();
+      await requestedChannel.remove();
+      res.status(201).json({
+        message: "Request Accepted and channel created",
+        channel: newChannel,
+      });
+    }
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

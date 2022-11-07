@@ -42,12 +42,24 @@ router
   .route("/:channelId/setting")
   .put([isAuth, isAdmin], channelController.changeSetting);
 
+//TODO : add request channel validator
 router
-  .route("/:channelId/pending-posts/:postId/:response")
-  .post([isAuth, isAdmin], channelController.responsePendingPost);
+  .route("/:channelId/creation-request")
+  .get([isAuth, isAdmin], channelController.getRequestedChannel)
+  .post([isAuth], channelController.requestChannel);
+
+router
+  //  response : "accept","decline"
+  .route(":/channelId/creation-request/:requestId/:response")
+  //body contain : reason
+  .post([isAuth, isAdmin], channelController.responseRequestedChannel);
 
 router
   .route("/:channelId/pending-posts")
   .get([isAuth, isAdmin], channelController.getPendingPost); //accept 1 channel or array of channel
-// [isAuth, isAdmin],
+
+router
+  .route("/:channelId/pending-posts/:postId/:response")
+  .post([isAuth, isAdmin], channelController.responsePendingPost);
+
 module.exports = router;
