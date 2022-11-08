@@ -7,17 +7,14 @@ const adminController = require("../controllers/admin");
 
 const router = express.Router();
 
-router.post(
-  "/channels/:channelId/set-admin/:userId",
-  isAuth,
-  adminController.setAsAdmin
-);
+router
+  .route("/channels/:channelId/admin/:userId")
+  .post(isAuth, adminController.setAsAdmin)
+  .delete(isAuth, adminController.demoteFromAdmin);
 
-router.delete(
-  "/channels/:channelId/demote-admin/:userId",
-  isAuth,
-  adminController.demoteFromAdmin
-);
+router
+  .route("/channels/:channelId/status/:value")
+  .put([isAuth, isAdmin], adminController.changeChannelStatus);
 
 router.delete(
   "/channels/:channelId/remove/:userId",
@@ -33,8 +30,6 @@ router.put(
   [isAuth, isAdmin],
   adminController.responsePendingEntry
 );
-
-router.put("channels/:channelId", isAuth, isAdmin);
 
 //TODO : add delete channel by admin
 router.delete(

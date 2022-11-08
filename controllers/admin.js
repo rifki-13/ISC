@@ -173,3 +173,16 @@ exports.deleteChannel = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.changeChannelStatus = async (req, res, next) => {
+  const { channelId, value } = req.params;
+  try {
+    await Channel.findByIdAndUpdate(channelId, { status: value });
+    res.status(200).json({ message: "Channel status changed" });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};

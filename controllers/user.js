@@ -118,6 +118,12 @@ exports.enterChannel = async (req, res, next) => {
   const userId = req.userId;
   try {
     const channel = await Channel.findOne({ entry_code: entryCode });
+    if (channel.status === "suspended") {
+      res
+        .status(403)
+        .json({ message: "Entry forbidden because this channel is suspended" });
+      return;
+    }
     if (!channel) {
       const error = new Error("Wrong entry code");
       error.statusCode = 404;
@@ -140,12 +146,10 @@ exports.enterChannel = async (req, res, next) => {
     } else {
       channel.pending_entry.push(user);
       await channel.save();
-      res
-        .status(200)
-        .json({
-          status: "pending",
-          message: "Entry pending, wait to be accepted by channel admin",
-        });
+      res.status(200).json({
+        status: "pending",
+        message: "Entry pending, wait to be accepted by channel admin",
+      });
     }
   } catch (err) {
     if (!err.statusCode) {

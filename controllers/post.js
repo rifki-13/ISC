@@ -74,7 +74,8 @@ exports.addPost = async (req, res, next) => {
     const channels = await Channel.find({ _id: channel });
     //filtering channel
     for (const chan of channels) {
-      if (!chan.setting?.post_approval || chan.admin.includes(author)) {
+      if (chan.status === "suspended") {
+      } else if (!chan.setting?.post_approval || chan.admin.includes(author)) {
         channelId.push(chan._id);
       } else {
         approvalRequiredChannel.push(chan);
@@ -360,7 +361,10 @@ exports.getPostsByChannel = (req, res, next) => {
 
 exports.getPostsByChannelStatus = async (req, res, next) => {
   const channelId = JSON.parse(req.params.channelId);
-  const status = req.params.status;
+  let status = req.params.status;
+  if (isJsonParsable(req.params.status)) {
+    status = JSON.parse(status);
+  }
   let posts = [];
   try {
     posts = await Post.find({ status: status })
@@ -736,10 +740,14 @@ exports.deleteReportedPost = async (req, res, next) => {
 };
 
 exports.toggleComment = async (req, res, next) => {
-  const { postId, value } = req.params;
+  const { postId, value, key } = req.params;
   try {
     const post = await Post.findById(postId);
-    post.read_only = value !== "enable";
+    if (key === "read_only") {
+      post[key] = value === "true";
+    } else {
+      post[key] = value;
+    }
     await post.save();
     res.status(200).json({ message: `Comment ${value}d` });
   } catch (err) {

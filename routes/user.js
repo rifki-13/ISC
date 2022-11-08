@@ -54,6 +54,7 @@ router.route("/:userId/posts").get(isAuth, userController.getOwnPost);
 //POST /user/ || create user
 
 //POST /user/assign
+//TODO : change route to enter channel
 router.post("/channel/:entryCode/enter", isAuth, userController.enterChannel);
 
 //POST /users/channel/:channelId/quit

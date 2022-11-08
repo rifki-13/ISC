@@ -5,6 +5,7 @@ const postController = require("../controllers/post");
 
 //import middleware
 const isAuth = require("../middleware/is-auth");
+const isAdmin = require("../middleware/is-admin");
 const uploadPostAttachmentMiddleware = require("../middleware/uploader/post-attachment-middleware");
 const commentValidator = require("../middleware/validator/comment-reply-validator");
 
@@ -27,11 +28,11 @@ router
   .route("/:postId/report")
   .post(isAuth, postController.reportPost)
   //TODO : add admin middleware later, after creating reported post page in admin client
-  .delete(isAuth, postController.deleteReportedStatus);
+  .delete([isAuth, isAdmin], postController.deleteReportedStatus);
 
 //Enable disable comment
 router
-  .route("/:postId/set/comment/:value")
+  .route("/:postId/set/:key/:value")
   .put(isAuth, postController.toggleComment);
 
 router
