@@ -1,5 +1,8 @@
 const Channel = require("../models/channel");
 const User = require("../models/user");
+const Post = require("../models/post");
+const ChannelRequest = require("../models/channel-request");
+const ReportedPost = require("../models/reported_post");
 
 //done
 exports.setAsAdmin = (req, res, next) => {
@@ -98,6 +101,71 @@ exports.responsePendingEntry = async (req, res, next) => {
       status: response,
       message: `Entry ${response === "accept" ? "accepted" : "rejected"}`,
     });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.deleteChannel = async (req, res, next) => {
+  const { channelId } = req.params;
+  try {
+    const channel = await Channel.findById(channelId).populate("member");
+    if (channel.child_channel.length !== 0) {
+      res.status(403).json({
+        message:
+          "Cant delete channel because this channel contain child channel",
+      });
+      return;
+    }
+    for (const memberElement of channel.member) {
+      memberElement.assigned_channel.pull(channel);
+      if (memberElement.managed_channel.includes(channelId)) {
+        //TODO : send notification to all member of channel, channel deleted
+        memberElement.managed_channel.pull(channel);
+      }
+      await memberElement.save();
+    }
+    //TODO : if channel has photo, delete photo from s3
+    if (channel.parent_channel) {
+      const parentChannel = await Channel.findById(channel.parent_channel);
+      parentChannel.child_channel.pull(channel);
+      await parentChannel.save();
+    }
+    const posts = await Post.find({ channel: channelId });
+    for (const post of posts) {
+      post.channel.pull(channel);
+      post.save();
+    }
+    const pendingPosts = await Post.find({ pending_channels: channelId });
+    if (pendingPosts) {
+      for (const pendingPost of pendingPosts) {
+        pendingPost.pending_channels.pull(channel);
+        await pendingPost.save();
+      }
+    }
+
+    const reportedPost = await ReportedPost.findOne({
+      reported_to: channelId,
+    }).populate("post");
+    if (reportedPost) {
+      reportedPost.post.status = "active";
+      await reportedPost.post.save();
+      reportedPost.remove();
+    }
+    const channelRequests = await ChannelRequest.find({
+      requested_to: channelId,
+    });
+    if (channelRequests) {
+      for (const channelRequest of channelRequests) {
+        //TODO : send notification channel request canceled because channel deleted
+        channelRequest.remove();
+      }
+    }
+    await channel.remove();
+    res.status(200).json({ message: "Channel Deleted successfully" });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

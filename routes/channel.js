@@ -50,7 +50,7 @@ router
 
 router
   //  response : "accept","decline"
-  .route(":/channelId/creation-request/:requestId/:response")
+  .route("/:channelId/creation-request/:requestId/:response")
   //body contain : reason
   .post([isAuth, isAdmin], channelController.responseRequestedChannel);
 

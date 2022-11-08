@@ -36,6 +36,13 @@ router.put(
 
 router.put("channels/:channelId", isAuth, isAdmin);
 
+//TODO : add delete channel by admin
+router.delete(
+  "/channels/:channelId",
+  [isAuth, isAdmin],
+  adminController.deleteChannel
+);
+
 // router.put("hierarchy/set", isAuth);
 
 //admin delete user posts / pull this channel id from posts, so post not visible in this channel

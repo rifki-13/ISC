@@ -11,7 +11,7 @@ module.exports = async (expoPushTokens, title, body, data = null) => {
       to: expoPushTokens,
       title: title,
       body: body,
-      data: data,
+      ...(data !== null && { data: data }),
     },
   });
 };

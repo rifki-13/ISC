@@ -299,13 +299,13 @@ exports.getPendingPost = async (req, res, next) => {
 exports.requestChannel = async (req, res, next) => {
   const userId = req.userId;
   const { channelId } = req.params;
-  const { channelName, desc, purpose } = req.body;
+  const { channelName, description, purpose } = req.body;
   try {
     const requestChannel = await RequestChannel.create({
       requester: userId,
       requested_to: channelId,
       channel_name: channelName,
-      description: desc,
+      description: description,
       purpose: purpose,
     });
     res
@@ -324,7 +324,10 @@ exports.getRequestedChannel = async (req, res, next) => {
   try {
     const requestedChannel = await RequestChannel.find({
       requested_to: channelId,
-    });
+    })
+      .populate("requester", "_id name")
+      .populate("requested_to", "_id name");
+
     res
       .status(200)
       .json({ message: "data fetched", requestedChannel: requestedChannel });
@@ -341,9 +344,9 @@ exports.responseRequestedChannel = async (req, res, next) => {
   try {
     const admin = await User.findById(req.userId);
     const requestedChannel = await RequestChannel.findById(requestId);
+    const user = await User.findById(requestedChannel.requester);
     if (response === "decline") {
       const { reason } = req.body;
-      const user = await User.findById(requestedChannel.requester);
       await requestedChannel.remove();
       if (user.expo_push_token) {
         await sendPushNotification(
@@ -365,8 +368,13 @@ exports.responseRequestedChannel = async (req, res, next) => {
       });
       newChannel.admin.push(requestedChannel.requester);
       newChannel.member.push(requestedChannel.requester);
+      user.assigned_channel.push(newChannel);
+      user.managed_channel.push(newChannel);
+      await user.save();
       await newChannel.save();
       const channel = await Channel.findById(channelId);
+      //TODO : after channel created, send notification with data "channel created" to user,
+      // and when tapped go to channel detail screen
       channel.child_channel.push(newChannel);
       await channel.save();
       await requestedChannel.remove();
