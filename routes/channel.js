@@ -16,6 +16,8 @@ const channelFormValidator = require("../middleware/validator/channel-form-valid
 
 const router = express.Router();
 
+//TODO : method to check if entry code has taken
+
 router
   .route("/")
   .get(isAuth, channelController.getChannels) //route get /channel/ to get all channel

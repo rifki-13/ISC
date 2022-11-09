@@ -48,9 +48,6 @@ router
 //route get post based on userid || GET /posts/user
 router.route("/:userId/posts").get(isAuth, userController.getOwnPost);
 
-//TODO get user data without sensitif data
-// router.get("/user-data/:userId", userController.getUserData);
-
 //POST /user/ || create user
 
 //POST /user/assign

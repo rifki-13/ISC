@@ -3,6 +3,8 @@ const User = require("../models/user");
 const Post = require("../models/post");
 const ChannelRequest = require("../models/channel-request");
 const ReportedPost = require("../models/reported_post");
+const s3Helpers = require("../helpers/s3");
+const sendPushNotification = require("../helpers/send-notification");
 
 //done
 exports.setAsAdmin = (req, res, next) => {
@@ -120,15 +122,23 @@ exports.deleteChannel = async (req, res, next) => {
       });
       return;
     }
+    let expoTokens = [];
     for (const memberElement of channel.member) {
       memberElement.assigned_channel.pull(channel);
+      if (memberElement.expo_push_token) {
+        expoTokens.push(memberElement.expo_push_token);
+      }
       if (memberElement.managed_channel.includes(channelId)) {
-        //TODO : send notification to all member of channel, channel deleted
         memberElement.managed_channel.pull(channel);
       }
       await memberElement.save();
     }
-    //TODO : if channel has photo, delete photo from s3
+    //send notification to channel member
+    await sendPushNotification(
+      expoTokens,
+      channel.name,
+      `Channel ${channel.name} has been deleted by admin`
+    );
     if (channel.parent_channel) {
       const parentChannel = await Channel.findById(channel.parent_channel);
       parentChannel.child_channel.pull(channel);
@@ -157,13 +167,25 @@ exports.deleteChannel = async (req, res, next) => {
     }
     const channelRequests = await ChannelRequest.find({
       requested_to: channelId,
-    });
+    }).populate("requester");
     if (channelRequests) {
       for (const channelRequest of channelRequests) {
-        //TODO : send notification channel request canceled because channel deleted
+        if (channelRequest.requester.expo_push_token) {
+          await sendPushNotification(
+            [channelRequest.requester.expo_push_token],
+            "Channel Request deleted",
+            "Request deleted because parent channel got deleted by its admin"
+          );
+        }
         channelRequest.remove();
       }
     }
+    //delete channel photo
+    let keys = [];
+    if (channel.photo) {
+      keys = s3Helpers.extractKeys([channel.photo], keys);
+    }
+    await s3Helpers.deleteObjects(keys);
     await channel.remove();
     res.status(200).json({ message: "Channel Deleted successfully" });
   } catch (err) {

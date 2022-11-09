@@ -379,6 +379,13 @@ exports.getPostsByChannelStatus = async (req, res, next) => {
         },
         { path: "comments.replies", populate: "author" },
       ]);
+    if (req.query.search) {
+      console.log(req.query.search);
+      posts = posts.filter((el) => {
+        if (el.title.toLowerCase().includes(req.query.search.toLowerCase()))
+          return el;
+      });
+    }
     res.status(200).json({ message: "Post Found", post: posts });
   } catch (err) {
     if (!err.statusCode) {

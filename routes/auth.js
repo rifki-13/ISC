@@ -6,6 +6,8 @@ const authController = require("../controllers/auth");
 
 const router = express.Router();
 
+//TODO : method get to check is username has taken
+
 router.put(
   "/signup",
   [
