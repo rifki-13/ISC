@@ -39,7 +39,9 @@ exports.getChannelsData = async (req, res, next) => {
     const channel = await query
       .populate("member", "_id name photo")
       .populate("admin", "_id name photo")
-      .populate("pending_entry", "_id name photo");
+      .populate("pending_entry", "_id name photo")
+      .populate("child_channel", "_id name photo")
+      .populate("parent_channel", "_id name photo");
     if (!channel) {
       const error = new Error("Channels not founds");
       error.statusCode = 404;

@@ -3,6 +3,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const config = require("config");
+const cron = require("node-cron");
 
 //import route
 const userRoutes = require("./routes/user");
@@ -10,6 +11,7 @@ const channelRoutes = require("./routes/channel");
 const authRoutes = require("./routes/auth");
 const postRoutes = require("./routes/post");
 const adminRoutes = require("./routes/admin");
+const postController = require("./controllers/post");
 
 const app = express();
 
@@ -46,5 +48,9 @@ mongoose
   .connect(config.get("db.uri"))
   .then((result) => {
     app.listen(8080);
+    cron.schedule("0 0 0 * * *", postController.changePostStatusDaily, {
+      scheduled: true,
+      timezone: "Asia/Jakarta",
+    });
   })
   .catch((err) => console.log(err));

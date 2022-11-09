@@ -764,3 +764,30 @@ exports.toggleComment = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.changePostStatusDaily = async () => {
+  try {
+    const posts = await Post.find({ status: "active" })
+      .where("validity_date")
+      .ne(null);
+    let datas = [];
+    for (const post of posts) {
+      if (post.validity_date < new Date()) {
+        datas.push(post);
+      }
+    }
+    if (posts.length === 0) {
+      return 0;
+    }
+    for (const data of datas) {
+      //TODO : send notification to post owner
+      data.status = "expired";
+      await data.save();
+    }
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    throw err;
+  }
+};
