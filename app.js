@@ -11,6 +11,7 @@ const channelRoutes = require("./routes/channel");
 const authRoutes = require("./routes/auth");
 const postRoutes = require("./routes/post");
 const adminRoutes = require("./routes/admin");
+const superuserRoutes = require("./routes/superuser");
 const postController = require("./controllers/post");
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/channels", channelRoutes);
 app.use("/auth", authRoutes);
 app.use("/posts", postRoutes);
 app.use("/admin", adminRoutes);
+app.use("/superuser", superuserRoutes);
 //TODO : consider adding reported routes
 
 //error middleware catch error dan mengirimkan respon message error

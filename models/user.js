@@ -64,14 +64,12 @@ const userSchema = new Schema(
         required: false,
       },
     ],
-    role: [
-      {
-        type: String,
-        enum: {
-          values: ["admin", "mahasiswa", "dosen", "superuser"],
-        },
+    role: {
+      type: String,
+      enum: {
+        values: ["mahasiswa", "dosen", "superuser"],
       },
-    ],
+    },
     expo_push_token: {
       type: String,
       required: false,
