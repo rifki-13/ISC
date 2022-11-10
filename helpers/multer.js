@@ -47,3 +47,5 @@ exports.uploadPostAttachment = storeFile("attachments/");
 exports.uploadUserPhoto = storeFile("user_photos/");
 
 exports.uploadChannelPhoto = storeFile("channel_photos/");
+
+exports.uploadMahasiswaExcel = storeFile("excel/");

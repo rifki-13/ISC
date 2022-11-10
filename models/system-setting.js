@@ -2,6 +2,14 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
+const channelSettingSchema = new Schema({
+  max_admin: {
+    type: Number,
+    required: true,
+    default: 5,
+  },
+});
+
 const systemSettingSchema = new Schema(
   {
     enable_register: {
@@ -14,7 +22,12 @@ const systemSettingSchema = new Schema(
       required: true,
       default: true,
     },
+    channels_setting: {
+      type: channelSettingSchema,
+      required: true,
+    },
   },
+
   { timestamps: true }
 );
 
