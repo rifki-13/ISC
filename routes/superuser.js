@@ -12,8 +12,17 @@ const isAuth = require("../middleware/is-auth");
 const isSuperUser = require("../middleware/is-super-user");
 
 router
-  .route("/channel-setting")
+  .route("/system-setting")
+  .get(superUserController.getSystemSetting)
   .put([isAuth, isSuperUser], superUserController.editSystemSetting);
+
+router
+  .route("/jurusan-prodi")
+  .post([isAuth, isSuperUser], superUserController.addJurusanProdi);
+
+router
+  .route("/jurusan-prodi/:jurusanId")
+  .put([isAuth, isSuperUser], superUserController.editJurusanProdi);
 
 router
   .route("/import/user")

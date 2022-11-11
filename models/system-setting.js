@@ -10,6 +10,30 @@ const channelSettingSchema = new Schema({
   },
 });
 
+const prodiSchema = new Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  kode: {
+    type: String,
+    required: true,
+  },
+});
+
+const jurusanSchema = new Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  prodi: [
+    {
+      type: prodiSchema,
+      required: false,
+    },
+  ],
+});
+
 const systemSettingSchema = new Schema(
   {
     enable_register: {
@@ -26,6 +50,12 @@ const systemSettingSchema = new Schema(
       type: channelSettingSchema,
       required: true,
     },
+    jurusan: [
+      {
+        type: jurusanSchema,
+        required: true,
+      },
+    ],
   },
 
   { timestamps: true }
