@@ -766,10 +766,12 @@ exports.toggleComment = async (req, res, next) => {
 };
 
 exports.changePostStatusDaily = async () => {
+  console.log("Running Cron Job");
   try {
     const posts = await Post.find({ status: "active" })
       .where("validity_date")
-      .ne(null);
+      .ne(null)
+      .populate("author", "expo_push_token");
     let datas = [];
     for (const post of posts) {
       if (post.validity_date < new Date()) {
@@ -780,7 +782,13 @@ exports.changePostStatusDaily = async () => {
       return 0;
     }
     for (const data of datas) {
-      //TODO : send notification to post owner
+      if (data.author.expo_push_token) {
+        await sendPushNotification(
+          [data.author.expo_push_token],
+          "Your Post",
+          "Your post has expired / outdated"
+        );
+      }
       data.status = "expired";
       await data.save();
     }

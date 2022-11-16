@@ -77,7 +77,13 @@ exports.getSystemSetting = async (req, res, next) => {
 };
 
 exports.editSystemSetting = async (req, res, next) => {
+  const { enableRegister, enableChannelCreation } = req.body;
   try {
+    const setting = (await SystemSetting.find())[0];
+    setting.enable_register = enableRegister;
+    setting.enable_channel_creation = enableChannelCreation;
+    await setting.save();
+    res.status(200).json({ message: "Setting berhasil di update" });
     //  TODO: edit system setting
   } catch (err) {
     if (!err.statusCode) {
@@ -131,7 +137,15 @@ exports.getUserProdi = async (req, res, next) => {
       query = query.where("role").equals(req.query.role);
     }
     const users = await query;
-    res.status(200).json({ message: "Data User fetched", users: users });
+    let data = users;
+    if (req.query.search) {
+      data = users.filter((el) =>
+        el.name
+          .toLowerCase()
+          .includes(req.query.search.toString().toLowerCase())
+      );
+    }
+    res.status(200).json({ message: "Data User fetched", users: data });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
@@ -166,6 +180,73 @@ exports.deleteUser = async (req, res, next) => {
     }
     await User.findByIdAndDelete(userId);
     res.status(200).json({ message: "User account deleted" });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.createChannel = async (req, res, next) => {
+  const { channelName, channelDesc, entryCode, admin, parentChannel } =
+    req.body;
+  try {
+    const user = await User.findById(admin);
+    const channel = await Channel.create({
+      name: channelName,
+      desc: channelDesc,
+      ...(entryCode && { entry_code: entryCode }),
+    });
+    if (parentChannel) {
+      const parent = await Channel.findById(parentChannel);
+      parent.child_channel.push(channel);
+      await parent.save();
+      channel.parent_channel = parent;
+    }
+    channel.member.push(user);
+    channel.admin.push(user);
+    user.assigned_channel.push(channel);
+    user.managed_channel.push(channel);
+    await channel.save();
+    await user.save();
+    res.status(201).json({ message: "Channel created", channel: channel });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.getChannels = async (req, res, next) => {
+  try {
+    let query = Channel.find();
+    if (req.query.search) {
+      query = Channel.find({
+        name: { $regex: req.query.search, $options: "i" },
+      });
+    }
+    const channels = await query.populate("admin");
+    res.status(200).json({ message: "Channel fetched", channels: channels });
+  } catch (err) {
+    if (!err.statusCode) {
+      err.statusCode = 500;
+    }
+    next(err);
+  }
+};
+
+exports.getUsers = async (req, res, next) => {
+  try {
+    let query = User.find();
+    if (req.query.search) {
+      query = User.find({
+        name: { $regex: req.query.search, $options: "i" },
+      });
+    }
+    const users = await query;
+    res.status(200).json({ message: "Users fetched", users: users });
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;

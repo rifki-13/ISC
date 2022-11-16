@@ -125,7 +125,10 @@ exports.deleteChannel = async (req, res, next) => {
     let expoTokens = [];
     for (const memberElement of channel.member) {
       memberElement.assigned_channel.pull(channel);
-      if (memberElement.expo_push_token) {
+      if (
+        memberElement.expo_push_token &&
+        !channel.admin.includes(memberElement._id)
+      ) {
         expoTokens.push(memberElement.expo_push_token);
       }
       if (memberElement.managed_channel.includes(channelId)) {
@@ -134,11 +137,13 @@ exports.deleteChannel = async (req, res, next) => {
       await memberElement.save();
     }
     //send notification to channel member
-    await sendPushNotification(
-      expoTokens,
-      channel.name,
-      `Channel ${channel.name} has been deleted by admin`
-    );
+    if (expoTokens.length > 0) {
+      await sendPushNotification(
+        expoTokens,
+        channel.name,
+        `Channel ${channel.name} has been deleted by admin`
+      );
+    }
     if (channel.parent_channel) {
       const parentChannel = await Channel.findById(channel.parent_channel);
       parentChannel.child_channel.pull(channel);
@@ -184,8 +189,9 @@ exports.deleteChannel = async (req, res, next) => {
     let keys = [];
     if (channel.photo) {
       keys = s3Helpers.extractKeys([channel.photo], keys);
+      await s3Helpers.deleteObjects(keys);
     }
-    await s3Helpers.deleteObjects(keys);
+
     await channel.remove();
     res.status(200).json({ message: "Channel Deleted successfully" });
   } catch (err) {
